@@ -67,6 +67,61 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 COPY_PATH = "$HOME/.local/share/omarchy"
 
+# The bar's menu button draws the wh01s17 W instead of the Omarchy glyph.
+# Same rectangles as themes/wh01s17/brand/logo.svg (stroked like the
+# 02-outline-mark wallpaper), moved to the origin.
+MENU_BAR_WIDGET = """\
+import QtQuick
+import QtQuick.Shapes
+import qs.Commons
+import qs.Ui
+
+// wh01s17: the W mark replaces the Omarchy glyph in this frozen copy.
+BarWidget {
+  id: root
+  moduleName: "omarchy.menu"
+
+  readonly property real markHeight: Math.round(Style.font.body * 1.25)
+  readonly property real markWidth: Math.round(markHeight * 336 / 304)
+
+  implicitWidth: button.implicitWidth
+  implicitHeight: button.implicitHeight
+
+  WidgetButton {
+    id: button
+    anchors.fill: parent
+    bar: root.bar
+    labelVisible: false
+    hasVisualContent: true
+    horizontalMargin: 7.5
+    fixedWidth: root.vertical ? -1 : root.markWidth + scaledHorizontalMargin * 2
+    tooltipText: "Menú"
+    onPressed: function(button) {
+      if (!root.bar) return
+      if (button === Qt.RightButton) root.bar.run("xdg-terminal-exec")
+      else root.bar.run("omarchy-shell shell toggle omarchy.menu '{\\"menu\\":\\"root\\"}'")
+    }
+
+    Shape {
+      anchors.centerIn: parent
+      width: root.markWidth
+      height: root.markHeight
+      preferredRendererType: Shape.CurveRenderer
+
+      ShapePath {
+        readonly property real unit: root.markHeight / 304
+        fillColor: "transparent"
+        strokeColor: Color.accent
+        strokeWidth: 1.4
+        joinStyle: ShapePath.MiterJoin
+        scale: Qt.size(unit, unit)
+        PathSvg { path: "M0 0h80v240H0zm128 0h80v240h-80zm128 0h80v240h-80zM64 240h80v64H64zm128 0h80v64h-80z" }
+      }
+    }
+  }
+}
+"""
+
 # Bindings for apps and web apps the user does not use (arch/PLAN.md, D7).
 # Matched by the description argument of o.bind(...).
 DROPPED_BINDINGS = {
@@ -219,6 +274,10 @@ def patch_runtime(root: Path, version: str) -> None:
             "env -u BROWSER xdg-settings set default-web-browser firefox.desktop\n")
     replace(bin_dir / "omarchy-provision-user",
             "xdg-mime default HEY.desktop x-scheme-handler/mailto\n", "")
+
+    menu_widget = root / "shell/plugins/menu/BarWidget.qml"
+    replace(menu_widget, 'text: "\\ue900"', 'text: "\\ue900"')  # upstream check only
+    menu_widget.write_text(MENU_BAR_WIDGET)
 
     # XCompose expands %H to the home directory.
     replace(root / "install/user/xcompose.sh", 'include "/usr/share/omarchy/default/xcompose"',
