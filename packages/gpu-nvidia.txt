@@ -1,0 +1,5 @@
+# NVIDIA Turing o posterior (con GSP): driver abierto oficial.
+nvidia-open-dkms
+nvidia-utils
+lib32-nvidia-utils
+libva-nvidia-driver

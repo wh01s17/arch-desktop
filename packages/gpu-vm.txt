@@ -1,0 +1,3 @@
+# Máquina virtual (VirtualBox).
+virtualbox-guest-utils
+mesa

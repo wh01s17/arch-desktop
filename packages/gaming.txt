@@ -1,0 +1,2 @@
+# Grupo opcional «gaming». Requiere multilib (el instalador lo activa).
+steam

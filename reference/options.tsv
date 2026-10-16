@@ -1,0 +1,79 @@
+opcion	valor
+general:gaps_in	2 2 2 2
+general:gaps_out	2 2 2 2
+general:border_size	1
+general:layout	dwindle
+general:col.active_border	ee84c959 ee45d9ea 45deg
+general:col.inactive_border	aa243038 0deg
+general:resize_on_border	false
+general:allow_tearing	false
+general:snap:enabled	false
+decoration:rounding	3
+decoration:rounding_power	2.000000
+decoration:active_opacity	1.000000
+decoration:inactive_opacity	1.000000
+decoration:dim_inactive	false
+decoration:blur:enabled	true
+decoration:blur:size	3
+decoration:blur:passes	2
+decoration:blur:ignore_opacity	true
+decoration:blur:new_optimizations	true
+decoration:blur:xray	false
+decoration:blur:special	false
+decoration:blur:popups	false
+decoration:shadow:enabled	true
+decoration:shadow:range	8
+decoration:shadow:render_power	3
+decoration:shadow:color	2684c959 0deg
+decoration:shadow:color_inactive	66040607 0deg
+group:col.border_active	ee84c959 ee45d9ea 45deg
+group:col.border_inactive	aa243038 0deg
+group:groupbar:enabled	true
+group:groupbar:font_size	12
+group:groupbar:height	22
+animations:enabled	true
+input:kb_layout	us
+input:kb_variant	altgr-intl
+input:kb_model	
+input:kb_options	caps:capslock
+input:kb_rules	
+input:numlock_by_default	true
+input:repeat_rate	40
+input:repeat_delay	600
+input:sensitivity	0.000000
+input:accel_profile	[[EMPTY]]
+input:follow_mouse	1
+input:natural_scroll	false
+input:touchpad:natural_scroll	false
+input:touchpad:scroll_factor	0.400000
+input:touchpad:disable_while_typing	true
+input:touchpad:tap-to-click	true
+input:touchpad:clickfinger_behavior	true
+input:tablet:output	DP-1
+gestures:workspace_swipe_distance	300
+dwindle:preserve_split	true
+dwindle:force_split	2
+dwindle:smart_split	false
+master:new_status	master
+master:mfact	0.550000
+layout:single_window_aspect_ratio	[0,0]
+misc:disable_hyprland_logo	true
+misc:disable_splash_rendering	true
+misc:force_default_wallpaper	-1
+misc:focus_on_activate	true
+misc:mouse_move_enables_dpms	true
+misc:key_press_enables_dpms	true
+misc:anr_missed_pings	3
+misc:vrr	0
+cursor:no_hardware_cursors	2
+cursor:hide_on_key_press	true
+cursor:inactive_timeout	0.000000
+cursor:zoom_factor	1.000000
+cursor:warp_on_change_workspace	1
+xwayland:enabled	true
+xwayland:force_zero_scaling	true
+binds:workspace_back_and_forth	false
+binds:allow_workspace_cycles	false
+ecosystem:no_update_news	true
+ecosystem:no_donation_nag	false
+render:direct_scanout	0

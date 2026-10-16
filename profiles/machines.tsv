@@ -1,0 +1,6 @@
+# Modelo DMI (/sys/class/dmi/id/product_name) → perfil de ~/dotfiles
+# (desktop/.config/hypr/profiles/<perfil>.lua y
+#  terminal/.config/kitty/profiles/<perfil>.conf).
+# El instalador propone el perfil cuyo modelo coincide; añade aquí cada equipo
+# nuevo (el del HP se puede ver con: cat /sys/class/dmi/id/product_name).
+OMEN by HP Laptop 15-ce0xx	omen

@@ -1,0 +1,226 @@
+{
+  "bar": {
+    "position": "top",
+    "transparent": false,
+    "centerAnchor": "wh01s17.clock",
+    "layout": {
+      "left": [
+        {
+          "id": "omarchy.menu"
+        },
+        {
+          "id": "omarchy.workspaces"
+        },
+        {
+          "id": "workspace-separator",
+          "type": "qml",
+          "source": "~/.config/omarchy/bar/modules/StatusModule.qml",
+          "text": "|",
+          "horizontalMargin": 7.5,
+          "classColors": {
+            "default": "#666666"
+          }
+        },
+        {
+          "id": "git-branch",
+          "type": "qml",
+          "source": "~/.config/omarchy/bar/modules/StatusModule.qml",
+          "exec": "$HOME/.config/omarchy/bar/scripts/git-branch.sh print",
+          "interval": 30,
+          "panel": true,
+          "onClick": "$HOME/.config/omarchy/bar/scripts/git-branch.sh copy",
+          "classColors": {
+            "clean": "#5fd75f",
+            "dirty": "#ffaf5f",
+            "conflict": "#ff5f5f"
+          }
+        },
+        {
+          "id": "ctf-separator",
+          "type": "qml",
+          "source": "~/.config/omarchy/bar/modules/StatusModule.qml",
+          "text": "|",
+          "horizontalMargin": 7.5,
+          "classColors": {
+            "default": "#666666"
+          }
+        },
+        {
+          "id": "ctf",
+          "type": "qml",
+          "source": "~/.config/omarchy/bar/modules/StatusModule.qml",
+          "exec": "$HOME/.config/omarchy/bar/scripts/ctf-ip.sh print",
+          "interval": 20,
+          "panel": true,
+          "onClick": "$HOME/.config/omarchy/bar/scripts/ctf-ip.sh copy-target",
+          "onRightClick": "$HOME/.config/omarchy/bar/scripts/ctf-ip.sh clear",
+          "classColors": {
+            "active": "#5fd75f",
+            "no-vpn": "#ffaf5f",
+            "missing-me": "#ff5f5f",
+            "missing-target": "#33ccff",
+            "inactive": "#777777"
+          }
+        }
+      ],
+      "center": [
+        {
+          "id": "wh01s17.indicators"
+        },
+        {
+          "id": "wh01s17.clock",
+          "format": "ddd d MMM HH:mm:ss",
+          "formatAlt": "d MMMM 'W'ww yyyy",
+          "verticalFormat": "HH\n—\nmm",
+          "weekStartDay": "monday"
+        },
+        {
+          "id": "omarchy.keyboard-layout"
+        },
+        {
+          "id": "omarchy.weather"
+        },
+        {
+          "id": "pomodoro",
+          "type": "qml",
+          "source": "~/.config/omarchy/bar/modules/StatusModule.qml",
+          "exec": "$HOME/.config/omarchy/bar/scripts/pomodoro.sh print",
+          "interval": 1,
+          "panel": true,
+          "onClick": "$HOME/.config/omarchy/bar/scripts/pomodoro.sh toggle",
+          "onMiddleClick": "$HOME/.config/omarchy/bar/scripts/pomodoro.sh skip",
+          "onRightClick": "$HOME/.config/omarchy/bar/scripts/pomodoro.sh menu",
+          "onScrollUp": "$HOME/.config/omarchy/bar/scripts/pomodoro.sh add",
+          "onScrollDown": "$HOME/.config/omarchy/bar/scripts/pomodoro.sh subtract",
+          "classColors": {
+            "work-running": "#ff5f5f",
+            "short-break-running": "#5fd75f",
+            "long-break-running": "#33ccff"
+          },
+          "dimClasses": [
+            "work-paused",
+            "short-break-paused",
+            "long-break-paused"
+          ]
+        },
+        {
+          "id": "omarchy.system-update"
+        }
+      ],
+      "right": [
+        {
+          "id": "omarchy.tray"
+        },
+        {
+          "id": "wh01s17.metronome",
+          "accent": true,
+          "beats": 4,
+          "bpm": 60,
+          "subdivision": "1/4",
+          "volume": 0.7
+        },
+        {
+          "id": "firewall-status",
+          "type": "qml",
+          "source": "~/.config/omarchy/bar/modules/StatusModule.qml",
+          "exec": "$HOME/.config/omarchy/bar/scripts/firewall-status.sh print",
+          "interval": 10,
+          "panel": true,
+          "onRightClick": "$HOME/.config/omarchy/bar/scripts/firewall-status.sh notify",
+          "classColors": {
+            "active": "#5fd75f",
+            "permissive": "#ffaf5f",
+            "inactive": "#ff5f5f",
+            "unknown": "#777777"
+          }
+        },
+        {
+          "id": "mounted-devices",
+          "type": "qml",
+          "source": "~/.config/omarchy/bar/modules/StatusModule.qml",
+          "exec": "$HOME/.config/omarchy/bar/scripts/mounted-devices.sh print",
+          "interval": 20,
+          "panel": true,
+          "onClick": "$HOME/.config/omarchy/bar/scripts/mounted-devices.sh open",
+          "classColors": {
+            "new": "#33ccff",
+            "active": "#5fd75f",
+            "inactive": "#777777"
+          }
+        },
+        {
+          "id": "clipboard-history",
+          "type": "qml",
+          "source": "~/.config/omarchy/bar/modules/StatusModule.qml",
+          "text": "󰅍",
+          "tooltip": "Historial del portapapeles\n\nSuper + Ctrl + V",
+          "onClick": "omarchy menu clipboard"
+        },
+        {
+          "id": "services-monitor",
+          "type": "qml",
+          "source": "~/.config/omarchy/bar/modules/StatusModule.qml",
+          "exec": "$HOME/.config/omarchy/bar/scripts/services-monitor.sh print",
+          "interval": 15,
+          "panel": true,
+          "onClick": "$HOME/.config/omarchy/bar/scripts/services-monitor.sh open",
+          "onMiddleClick": "$HOME/.config/omarchy/bar/scripts/services-monitor.sh copy",
+          "onRightClick": "$HOME/.config/omarchy/bar/scripts/services-monitor.sh notify",
+          "classColors": {
+            "active": "#5fd75f",
+            "exposed": "#ffaf5f",
+            "reverse": "#ff5f5f",
+            "inactive": "#777777"
+          }
+        },
+        {
+          "id": "omarchy.agents"
+        },
+        {
+          "id": "wh01s17.bluetooth"
+        },
+        {
+          "id": "wh01s17.network"
+        },
+        {
+          "id": "wh01s17.audio"
+        },
+        {
+          "id": "wh01s17.monitor"
+        },
+        {
+          "id": "cpu-shortcut",
+          "type": "qml",
+          "source": "~/.config/omarchy/bar/modules/StatusModule.qml",
+          "text": "󰍛",
+          "tooltip": "Actividad del sistema",
+          "exec": "$HOME/.config/omarchy/bar/scripts/system-usage.sh print",
+          "interval": 3,
+          "onClick": "omarchy launch tui btop",
+          "onRightClick": "alacritty",
+          "classColors": {
+            "critical": "#ff5f5f",
+            "busy": "#ffaf5f"
+          }
+        },
+        {
+          "id": "wh01s17.power"
+        }
+      ]
+    },
+    "id": "wh01s17.bar"
+  },
+  "idle": {
+    "screensaver": 150,
+    "lock": 300
+  },
+  "plugins": [
+    {
+      "id": "io.github.sirjul1337.lock-explorer",
+      "design": "neon"
+    }
+  ],
+  "disabledPlugins": [
+    "omarchy.lock"
+  ]
+}

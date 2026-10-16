@@ -1,0 +1,72 @@
+usos	comando
+6	omarchy theme set
+6	omarchy-shell
+6	omarchy-reminder
+6	omarchy-menu
+5	omarchy restart shell
+4	omarchy restart terminal
+4	omarchy-network-band
+4	omarchy menu select
+3	omarchy shell -q
+3	omarchy shell media
+3	omarchy-bluetooth-device
+2	omarchy-voxtype-status
+2	omarchy-voxtype-config
+2	omarchy-toggle-bar
+2	omarchy plugin enable
+2	omarchy pkg aur
+2	omarchy-network-status
+2	omarchy menu clipboard
+2	omarchy-launch-webapp
+2	omarchy-launch-floating-terminal-with-presentation
+2	omarchy-kitty
+2	omarchy-hyprland-monitor-internal
+2	omarchy-capture-screenrecording
+2	omarchy-brightness-display
+2	omarchy-bluetooth-power
+2	omarchy bar position
+2	omarchy bar move
+2	omarchy-audio-output-sink
+2	omarchy-audio-output-set-default
+2	omarchy audio output
+2	omarchy and not
+1	omarchy-version-pkgs
+1	omarchy-version-channel
+1	omarchy-version-branch
+1	omarchy-version
+1	omarchy-upgrade-to-quattro
+1	omarchy-update-available
+1	omarchy-update
+1	omarchy update
+1	omarchy-theme-current
+1	omarchy theme current
+1	omarchy theme bg
+1	omarchy-system-stats
+1	omarchy restart hyprsunset
+1	omarchy-powerprofiles-set
+1	omarchy-powerprofiles-list
+1	omarchy plugin list
+1	omarchy plugin disable
+1	omarchy plugin add
+1	omarchy-monitor-state
+1	omarchy-menu-timezone
+1	omarchy-lock-explorer
+1	omarchy launch tui
+1	omarchy-launch-or-focus-tui
+1	omarchy install terminal
+1	omarchy-hyprland-monitor-scaling
+1	omarchy-hyprland-monitor-internal-mirror
+1	omarchy-hyprland-monitor-clamshell
+1	omarchy-font-set
+1	omarchy file
+1	omarchy-dns
+1	omarchy-battery-status
+1	omarchy bar transparent
+1	omarchy-bar-text-color
+1	omarchy bar set
+1	omarchy-bar-move-ghost
+1	omarchy-bar-drag-ghost
+1	omarchy-bar
+1	omarchy bar
+1	omarchy-audio-sink-availability
+1	omarchy-audio-input-set-default

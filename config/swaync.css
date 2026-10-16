@@ -1,7 +1,0 @@
-* { font-family: "JetBrainsMono Nerd Font"; color: #cbd5ce; }
-.control-center { background: #11161a; border: 1px solid #243038; border-radius: 6px; }
-.notification { background: #171e23; border: 1px solid #33454f; border-radius: 6px; }
-.notification.critical { border-color: #ff6b66; }
-.widget-title, .widget-dnd { background: #11161a; }
-button { background: #2b4221; border: 1px solid #84c959; border-radius: 4px; }
-button:hover { background: #33454f; }

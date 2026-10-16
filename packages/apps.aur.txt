@@ -1,0 +1,8 @@
+# Grupo opcional «apps» (AUR).
+google-chrome
+typora
+spotify
+localsend-bin
+wayscriber-bin
+voxtype-bin
+try-cli

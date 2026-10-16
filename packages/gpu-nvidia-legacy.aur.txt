@@ -1,0 +1,4 @@
+# NVIDIA Maxwell/Pascal/Volta (sin GSP), p. ej. GTX 1060: rama 580xx del AUR.
+nvidia-580xx-dkms
+nvidia-580xx-utils
+lib32-nvidia-580xx-utils

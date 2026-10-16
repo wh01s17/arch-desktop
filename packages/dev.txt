@@ -1,0 +1,17 @@
+# Grupo opcional «dev»: Docker y dependencias de compilación que LazyVim y
+# mise usan (omarchy-base.packages).
+docker
+docker-buildx
+docker-compose
+lazydocker
+clang
+llvm
+lua51
+luarocks
+tree-sitter-cli
+ruby
+dotnet-runtime
+python-poetry-core
+postgresql-libs
+mariadb-libs
+qemu-user-static-binfmt

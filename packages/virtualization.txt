@@ -1,0 +1,4 @@
+# Grupo opcional «virtualization». virtualbox-host-dkms compila el módulo
+# para linux y linux-lts.
+virtualbox
+virtualbox-host-dkms

@@ -1,0 +1,9 @@
+# Fuentes. Siempre se instala. ttf-jetbrains-mono-nerd sustituye a la
+# variante -basic del repositorio de Omarchy.
+noto-fonts
+noto-fonts-cjk
+noto-fonts-emoji
+ttf-jetbrains-mono-nerd
+ttf-meslo-nerd
+ttf-nerd-fonts-symbols
+woff2-font-awesome

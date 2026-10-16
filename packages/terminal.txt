@@ -1,0 +1,20 @@
+# Terminal y herramientas de ~/.zshrc. Siempre se instala.
+zsh
+neovim
+tmux
+fzf
+fd
+ripgrep
+eza
+bat
+zoxide
+fastfetch
+starship
+lazygit
+tldr
+mise
+nvm
+xclip
+bind
+iproute2
+wget

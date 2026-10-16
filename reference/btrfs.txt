@@ -1,0 +1,28 @@
+
+## Subvolúmenes
+ID 256 gen 62 top level 5 path var/lib/portables
+ID 257 gen 62 top level 5 path var/lib/machines
+ID 258 gen 160922 top level 5 path swap
+ID 259 gen 162240 top level 5 path .snapshots
+ID 260 gen 156142 top level 259 path .snapshots/40/snapshot
+ID 261 gen 156142 top level 259 path .snapshots/41/snapshot
+ID 262 gen 156358 top level 259 path .snapshots/42/snapshot
+ID 263 gen 159694 top level 259 path .snapshots/43/snapshot
+
+## Montajes btrfs
+TARGET SOURCE         OPTIONS
+/      /dev/nvme0n1p4 rw,relatime,ssd,discard=async,space_cache=v2,subvolid=5,subvol=/
+
+## /etc/fstab
+UUID=<UUID>	/         	btrfs     	rw,relatime,ssd,discard=async,space_cache=v2,subvol=/	0 0
+UUID=<UUID>      	/boot     	vfat      	rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro	0 2
+/swap/swapfile none swap defaults,pri=0 0 0
+UUID=<UUID> /mnt/windows ntfs3 rw,uid=1000,gid=1000,umask=022,nofail,x-systemd.automount 0 0
+
+## Swap
+NAME           TYPE       SIZE   USED PRIO
+/swap/swapfile file      15.6G     0B    0
+/dev/zram0     partition 15.6G 341.6M  100
+
+## Snapper
+root

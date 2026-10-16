@@ -1,83 +1,118 @@
-# Arch con apariencia wh01s17
+# Escritorio wh01s17 en Arch puro
 
-Instala en Arch Linux una sesión visual autónoma inspirada en este Omarchy:
-Hyprland en Lua, barra y menús básicos en Quickshell, paleta y wallpapers
-`wh01s17`, Kitty, lanzador, bloqueo y prompt Oh My Posh. No instala Omarchy ni
-carga archivos de `/usr/share/omarchy`.
+Reproduce en Arch Linux, sin el repositorio ni los paquetes de Omarchy, el
+escritorio que usas en Omarchy 4: Hyprland en Lua, Omarchy Shell con tus
+plugins `wh01s17.*`, el tema `wh01s17`, Kitty, Zsh con Oh My Posh, tus atajos
+y tus aplicaciones.
+
+La idea es **congelar** Omarchy 4.0.4, que tiene licencia MIT, en lugar de
+reescribirlo. Esa copia vive en tus dotfiles como el paquete Stow `platform`,
+y tus paquetes `desktop`, `terminal` y `maintenance` funcionan sobre ella sin
+cambios.
+
+- Instalación paso a paso: [INSTALL.md](INSTALL.md)
+- Decisiones y fases: [PLAN.md](PLAN.md)
+- Atajos: [KEYBINDINGS.md](KEYBINDINGS.md) (generado)
+
+## Cómo encaja
+
+```text
+post-install-linux/arch/            instalador (este directorio)
+├── install.sh                      etapas: paquetes, AUR, Stow, sistema, usuario…
+├── lib/                            common, detección de hardware, pasos de root
+├── packages/*.txt                  listas oficiales (*.txt) y del AUR (*.aur.txt)
+├── profiles/machines.tsv           modelo DMI → perfil de monitores y fuente
+├── reference/                      captura de tu Omarchy (atajos, opciones…)
+└── tools/                          capture-reference, vendor-omarchy, compare-binds…
+
+~/dotfiles/                         configuración (Stow)
+├── platform/   (sólo Arch)         copia congelada de Omarchy → ~/.local/share/omarchy
+├── apps/       (sólo Arch)         mise, apps predeterminadas, webapps propias
+├── desktop/                        Hyprland, Omarchy Shell, plugins, tema
+├── terminal/                       Zsh, Kitty, Oh My Posh
+└── maintenance/                    timers de usuario
+```
+
+Con `OMARCHY_PATH=~/.local/share/omarchy` (lo define
+`~/.config/uwsm/env.d/10-omarchy`, del paquete `platform`), Hyprland, el
+shell y los comandos `omarchy-*` usan la copia en lugar de
+`/usr/share/omarchy`.
 
 ## Uso
 
-En un Arch recién instalado, entra como usuario normal y ejecuta:
+En un Arch recién instalado (ver [INSTALL.md](INSTALL.md)):
 
 ```bash
 git clone https://github.com/wh01s17/post-install-linux.git ~/workspace/post-install-linux
 cd ~/workspace/post-install-linux
 ./arch/install.sh --dry-run
-./arch/install.sh --profile auto
+./arch/install.sh
 ```
 
-Para la disposición de pantallas del Omen, sustituye `auto` por `omen`;
-para el portátil HP, usa `hp-gray`.
+El instalador detecta el modelo, la GPU, las pantallas, la batería, el
+arranque y el receptor Logitech, y pregunta por:
 
-Ejecuta el instalador tú mismo: usa `sudo` sólo para paquetes y servicios,
-y te pedirá la contraseña cuando haga falta. Instala paquetes oficiales con
-`pacman`, obtiene los wallpapers y el tema activo desde `~/dotfiles` (lo clona
-si falta) y descarga Oh My Posh con su instalador oficial a `~/.local/bin`.
-Después, cierra sesión e inicia **Hyprland** desde tu gestor de sesión o
-ejecutando `Hyprland` desde una TTY. Se recomienda Arch x86_64 con Hyprland 0.55 o superior
-por la configuración Lua.
+- el perfil de monitores (`omen`, `hp-gray` o `auto` para cualquier equipo);
+- el driver de la GPU;
+- los grupos opcionales (`dev`, `apps`, `gaming`, `virtualization`,
+  `pentest`);
+- la hibernación y el autologin.
 
-Puedes indicar otro clon local: `DOTFILES_DIR=/ruta/dotfiles ./arch/install.sh`.
-El perfil predeterminado `auto` acepta los monitores disponibles; `omen` y
-`hp-gray` replican los perfiles de monitores y tamaño de fuente de Kitty de
-los dotfiles actuales. Úsalos sólo si los nombres de salidas coinciden.
-El instalador no se ejecuta sobre Omarchy para evitar reemplazar la sesión de
-origen. Copia los archivos a `~/.config/`, `~/.zshrc` y `~/.local/bin/`;
-respalda los anteriores en `~/.config-backup/arch-look/<fecha>/`. La copia
-anterior de `~/.config/oh-my-posh` se respalda completa y se reemplaza por la
-del clon para mantener `omp-theme` y el tema activo juntos. Si un destino o
-directorio padre es un enlace de Stow, el instalador se detiene antes de instalar
-paquetes; desenlaza el paquete en conflicto y decide qué configuración gestionará
-esa ruta antes de continuar. No cambia la shell predeterminada: Kitty abre Zsh
-directamente. El archivo `~/.zshrc` que instala activa Oh My Posh, pero este
-instalador visual no instala Oh My Zsh ni sus plugins.
+Guarda las respuestas en `~/.config/wh01s17/machine.env`, así que volver a
+ejecutarlo no repite las preguntas. `./arch/install.sh --help` muestra todas
+las opciones.
 
-## Qué reproduce
+| Etapa | Qué hace |
+| --- | --- |
+| `preflight` | Arch, usuario normal, sin Omarchy, red, sudo |
+| `bootstrap` | git, stow, base-devel |
+| `dotfiles` | Clona o actualiza `~/dotfiles` |
+| `decide` | Detecta el hardware y pregunta (o lee `machine.env`) |
+| `packages` | Paquetes oficiales: `base`, `desktop`, `fonts`, `terminal`, grupos y GPU |
+| `aur` | yay, los sustitutos de lo que venía del repositorio de Omarchy, grupos, Limine/Snapper y BlackArch |
+| `stow` | `platform desktop terminal maintenance` y `apps` (sin plegar), con respaldo de conflictos |
+| `seed` | Configuración por defecto de Omarchy donde no hay una tuya; Neovim (LazyVim) |
+| `machine` | `machine-profile.lua` de Hyprland y `machine-profile.conf` de Kitty |
+| `system` | `lib/system-setup.sh` como root: archivos de sistema y pasos de configuración de Omarchy, firewall, hardware, SDDM con autologin, servicios, initramfs y Limine |
+| `user` | `omarchy-provision-user`: tema wh01s17, llavero, git, mise, skills, directorios XDG; Firefox como navegador; plugin lock-explorer |
+| `hibernate` | `omarchy-hibernation-setup` |
+| `shell` | Oh My Zsh, plugins, NVM y `chsh` a Zsh |
+| `services` | Timers de `maintenance` |
+| `validate` | `Hyprland --verify-config`, `zsh -n`, Oh My Posh, tema y `~/dotfiles/test.sh` |
 
-- Paleta `wh01s17`, dos fondos 4K, bordes verde/cian, radio de 6 px, sombra,
-  blur y separaciones de ventanas obtenidos de los dotfiles actuales. El fondo
-  elegido y el layout de los espacios 1 a 10 persisten entre sesiones.
-- Barra superior de Quickshell con espacios, ventana activa, reloj, bandeja y
-  menú; lanzador Wofi con la misma paleta.
-- Kitty con MesloLGS Nerd Font, opacidad 0,85 y el tema activo de Oh My Posh
-  copiado del checkout. `omp-theme` sigue disponible. La paleta fija de Kitty
-  permite usar el modo `--omarchy` del selector sin el runtime de Omarchy.
-- Atajos familiares para ventanas, espacios, medios, aplicaciones y menús.
-  El navegador instalado para esos atajos es Firefox, incluido el modo privado.
-  Consulta [KEYBINDINGS.md](KEYBINDINGS.md) para equivalencias y límites.
+## Diferencias con Omarchy
 
-## Diferencias actuales
+- Sin los temas de serie ni las migraciones: sólo existe `wh01s17`.
+- `omarchy update` actualiza Arch (pacman, AUR, mise) con un snapshot previo.
+  No toca el repositorio de Omarchy ni hace `git pull` en `OMARCHY_PATH`, que
+  aquí está dentro de `~/dotfiles`.
+- Desactivados: canales, reinstalación, `omarchy dev link`, restablecimiento
+  de fábrica y los `sudoers` sin contraseña de Omarchy.
+- Sin fcitx5 ni Plymouth.
+- Se quitan los atajos de las apps y webapps que no usas: ver
+  `reference/binds-dropped.tsv`.
+- Kernels `linux` y `linux-lts` en lugar de `linux-omarchy`. Los paquetes que
+  venían del repositorio de Omarchy salen del AUR (`packages/*.aur.txt`).
 
-Omarchy Shell contiene paneles y servicios propios para notificaciones,
-bloqueo, configuración, recordatorios y plugins. Esta instalación usa una
-barra y menús de Quickshell más sencillos, SwayNC para notificaciones y
-aplicaciones independientes para ajustes. No reproduce todos los paneles,
-iconos dinámicos ni las acciones propias de Omarchy. Los atajos que requieren
-esos servicios conservan su combinación y avisan si no hay equivalente.
+## Mantenimiento de la copia congelada
 
-El instalador toma el último estado disponible en el clon de dotfiles. Antes
-de formatear, publica o respalda los cambios sin commit y los temas descargados
-localmente: Git no los transporta a un equipo nuevo.
-
-## Verificación y restauración
+La copia se regenera desde un equipo con Omarchy:
 
 ```bash
-bash -n arch/install.sh arch/config/arch-look-action
-luac -p arch/config/hyprland.lua arch/config/bindings.lua
-qmllint arch/config/shell.qml
-Hyprland --verify-config --config ~/.config/hypr/hyprland.lua
+arch/tools/vendor-omarchy.py --force      # escribe ~/dotfiles/platform
+git -C ~/dotfiles diff --stat platform    # revisa antes de hacer commit
 ```
 
-Si el resultado no te gusta, copia los archivos guardados en
-`~/.config-backup/arch-look/<fecha>/` a sus rutas originales y vuelve a
-iniciar la sesión. El instalador no borra tus respaldos.
+Cada adaptación a Arch está dentro de `tools/vendor-omarchy.py` y comprueba
+el texto original que sustituye. Si una versión nueva de Omarchy lo cambia,
+la herramienta falla en lugar de dejar la copia a medias. Los cambios hechos
+a mano dentro de `platform/` se pierden al regenerarla.
+
+## Verificación
+
+```bash
+bash -n arch/install.sh arch/lib/*.sh arch/tools/*.sh
+python3 -m py_compile arch/tools/vendor-omarchy.py
+./arch/install.sh --dry-run --yes
+arch/tools/compare-binds.sh               # dentro de la sesión nueva
+```

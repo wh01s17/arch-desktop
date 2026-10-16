@@ -1,0 +1,324 @@
+[[
+{
+    "name": "specialWorkspaceOut",
+    "overridden": false,
+    "bezier": "",
+    "enabled": true,
+    "speed": 0.00,
+    "style": ""
+},
+{
+    "name": "workspacesIn",
+    "overridden": false,
+    "bezier": "",
+    "enabled": true,
+    "speed": 0.00,
+    "style": ""
+},
+{
+    "name": "layersIn",
+    "overridden": true,
+    "bezier": "easeOutQuint",
+    "enabled": true,
+    "speed": 4.00,
+    "style": "fade"
+},
+{
+    "name": "fadeDpms",
+    "overridden": false,
+    "bezier": "",
+    "enabled": true,
+    "speed": 0.00,
+    "style": ""
+},
+{
+    "name": "windowsMove",
+    "overridden": false,
+    "bezier": "",
+    "enabled": true,
+    "speed": 0.00,
+    "style": ""
+},
+{
+    "name": "fadeGlow",
+    "overridden": false,
+    "bezier": "",
+    "enabled": true,
+    "speed": 0.00,
+    "style": ""
+},
+{
+    "name": "zoomFactor",
+    "overridden": false,
+    "bezier": "",
+    "enabled": true,
+    "speed": 0.00,
+    "style": ""
+},
+{
+    "name": "shadowangle",
+    "overridden": true,
+    "bezier": "default",
+    "enabled": false,
+    "speed": 1.00,
+    "style": ""
+},
+{
+    "name": "specialWorkspace",
+    "overridden": true,
+    "bezier": "easeOutQuint",
+    "enabled": true,
+    "speed": 3.00,
+    "style": "slidevert"
+},
+{
+    "name": "glowangle",
+    "overridden": true,
+    "bezier": "default",
+    "enabled": false,
+    "speed": 1.00,
+    "style": ""
+},
+{
+    "name": "fadeSwitch",
+    "overridden": true,
+    "bezier": "default",
+    "enabled": false,
+    "speed": 1.00,
+    "style": ""
+},
+{
+    "name": "borderangle",
+    "overridden": true,
+    "bezier": "default",
+    "enabled": false,
+    "speed": 1.00,
+    "style": ""
+},
+{
+    "name": "fadeOut",
+    "overridden": true,
+    "bezier": "almostLinear",
+    "enabled": true,
+    "speed": 1.46,
+    "style": ""
+},
+{
+    "name": "fade",
+    "overridden": true,
+    "bezier": "quick",
+    "enabled": true,
+    "speed": 3.03,
+    "style": ""
+},
+{
+    "name": "border",
+    "overridden": true,
+    "bezier": "easeOutQuint",
+    "enabled": true,
+    "speed": 5.39,
+    "style": ""
+},
+{
+    "name": "specialWorkspaceIn",
+    "overridden": false,
+    "bezier": "",
+    "enabled": true,
+    "speed": 0.00,
+    "style": ""
+},
+{
+    "name": "workspaces",
+    "overridden": true,
+    "bezier": "easeOutQuint",
+    "enabled": true,
+    "speed": 2.00,
+    "style": "slide"
+},
+{
+    "name": "global",
+    "overridden": true,
+    "bezier": "default",
+    "enabled": true,
+    "speed": 10.00,
+    "style": ""
+},
+{
+    "name": "__internal_fadeCTM",
+    "overridden": true,
+    "bezier": "linear",
+    "enabled": true,
+    "speed": 5.00,
+    "style": ""
+},
+{
+    "name": "workspacesOut",
+    "overridden": false,
+    "bezier": "",
+    "enabled": true,
+    "speed": 0.00,
+    "style": ""
+},
+{
+    "name": "layersOut",
+    "overridden": true,
+    "bezier": "linear",
+    "enabled": true,
+    "speed": 1.50,
+    "style": "fade"
+},
+{
+    "name": "windowsIn",
+    "overridden": true,
+    "bezier": "easeOutQuint",
+    "enabled": true,
+    "speed": 4.10,
+    "style": "popin 87%"
+},
+{
+    "name": "windowsOut",
+    "overridden": true,
+    "bezier": "linear",
+    "enabled": true,
+    "speed": 1.49,
+    "style": "popin 87%"
+},
+{
+    "name": "layers",
+    "overridden": true,
+    "bezier": "easeOutQuint",
+    "enabled": true,
+    "speed": 3.81,
+    "style": ""
+},
+{
+    "name": "fadeIn",
+    "overridden": true,
+    "bezier": "almostLinear",
+    "enabled": true,
+    "speed": 1.73,
+    "style": ""
+},
+{
+    "name": "fadePopups",
+    "overridden": false,
+    "bezier": "",
+    "enabled": true,
+    "speed": 0.00,
+    "style": ""
+},
+{
+    "name": "fadeShadow",
+    "overridden": false,
+    "bezier": "",
+    "enabled": true,
+    "speed": 0.00,
+    "style": ""
+},
+{
+    "name": "fadeLayers",
+    "overridden": false,
+    "bezier": "",
+    "enabled": true,
+    "speed": 0.00,
+    "style": ""
+},
+{
+    "name": "windows",
+    "overridden": true,
+    "bezier": "easeOutQuint",
+    "enabled": true,
+    "speed": 3.79,
+    "style": ""
+},
+{
+    "name": "fadeLayersIn",
+    "overridden": true,
+    "bezier": "almostLinear",
+    "enabled": true,
+    "speed": 1.79,
+    "style": ""
+},
+{
+    "name": "fadeLayersOut",
+    "overridden": true,
+    "bezier": "almostLinear",
+    "enabled": true,
+    "speed": 1.39,
+    "style": ""
+},
+{
+    "name": "fadeDim",
+    "overridden": false,
+    "bezier": "",
+    "enabled": true,
+    "speed": 0.00,
+    "style": ""
+},
+{
+    "name": "fadePopupsIn",
+    "overridden": false,
+    "bezier": "",
+    "enabled": true,
+    "speed": 0.00,
+    "style": ""
+},
+{
+    "name": "monitorAdded",
+    "overridden": false,
+    "bezier": "",
+    "enabled": true,
+    "speed": 0.00,
+    "style": ""
+},
+{
+    "name": "fadePopupsOut",
+    "overridden": false,
+    "bezier": "",
+    "enabled": true,
+    "speed": 0.00,
+    "style": ""
+}],
+[
+{
+    "name": "quick",
+    "X0": 0.15,
+    "Y0": 0.00,
+    "X1": 0.10,
+    "Y1": 1.00
+},
+{
+    "name": "almostLinear",
+    "X0": 0.50,
+    "Y0": 0.50,
+    "X1": 0.75,
+    "Y1": 1.00
+},
+{
+    "name": "easeInOutCubic",
+    "X0": 0.65,
+    "Y0": 0.05,
+    "X1": 0.36,
+    "Y1": 1.00
+},
+{
+    "name": "easeOutQuint",
+    "X0": 0.23,
+    "Y0": 1.00,
+    "X1": 0.32,
+    "Y1": 1.00
+},
+{
+    "name": "linear",
+    "X0": 0.00,
+    "Y0": 0.00,
+    "X1": 1.00,
+    "Y1": 1.00
+},
+{
+    "name": "default",
+    "X0": 0.00,
+    "Y0": 0.75,
+    "X1": 0.15,
+    "Y1": 1.00
+}]]

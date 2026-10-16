@@ -1,0 +1,62 @@
+
+## Versiones
+omarchy: 4.0.4-1
+hyprland: v0.56.2 (efb509937800)
+quickshell: 0.3.1-1
+kernel: 7.2.5-3-omarchy
+
+## Equipo
+sys_vendor: HP
+product_name: OMEN by HP Laptop 15-ce0xx
+product_version: 
+board_name: 8390
+chassis_type: 10
+virtualizacion: none
+bateria: no
+retroiluminacion: nvidia_0 
+
+## GPU
+01:00.0 VGA compatible controller [0300]: NVIDIA Corporation GP106BM [GeForce GTX 1060 Mobile 6GB] [10de:1c60] (rev a1)
+3d:00.0 Unassigned class [ff00]: Realtek Semiconductor Co., Ltd. RTS522A PCI Express Card Reader [10ec:522a] (rev 01)
+
+## Pantallas (Hyprland)
+HDMI-A-1	1920x1080@59.93900	pos=-1920x-1439	scale=1	disabled=false	Samsung Electric Company SAMSUNG
+eDP-1	1920x1080@120.11400	pos=0x0	scale=1	disabled=false	AU Optronics 0x42ED
+DP-1	3840x2160@59.99700	pos=-3072x-359	scale=1.25	disabled=false	Lenovo Group Limited LEN S28u-10
+
+## Dispositivos de entrada
+teclado	video-bus	us/altgr-intl	caps:capslock
+teclado	hp--inc-hyperx-alloy-origins-60	us/altgr-intl	caps:capslock
+teclado	hp--inc-hyperx-alloy-origins-60-system-control	us/altgr-intl	caps:capslock
+teclado	hp--inc-hyperx-alloy-origins-60-consumer-control	us/altgr-intl	caps:capslock
+teclado	hp--inc-hyperx-alloy-origins-60-1	us/altgr-intl	caps:capslock
+teclado	logitech-usb-receiver	us/altgr-intl	caps:capslock
+teclado	logitech-usb-receiver-consumer-control	us/altgr-intl	caps:capslock
+teclado	logitech-usb-receiver-system-control	us/altgr-intl	caps:capslock
+teclado	power-button	us/altgr-intl	caps:capslock
+teclado	power-button-1	us/altgr-intl	caps:capslock
+teclado	at-translated-set-2-keyboard	us/altgr-intl	caps:capslock
+teclado	wireless-hotkeys	us/altgr-intl	caps:capslock
+teclado	hp-wmi-hotkeys	us/altgr-intl	caps:capslock
+teclado	jbl-charge-3-(avrcp)	us/altgr-intl	caps:capslock
+teclado	hl-virtual-keyboard-fcitx5	us/altgr-intl	caps:capslock
+puntero	hp--inc-hyperx-alloy-origins-60-mouse
+puntero	hp--inc-hyperx-alloy-origins-60-consumer-control-1
+puntero	logitech-usb-receiver-mouse
+puntero	logitech-usb-receiver-consumer-control-1
+puntero	synps/2-synaptics-touchpad
+
+## .local/state/omarchy/monitor-arrangement.conf
+root=eDP-1
+DP-1=eDP-1,left,-359
+HDMI-A-1=DP-1,above,1152
+
+## .local/state/omarchy/monitor-layout.conf
+layout=extend
+internal=eDP-1
+
+## .local/state/omarchy/monitor-modes.conf
+
+## Última escala pedida por salida (monitor-scaling.log)
+DP-1	1.25
+eDP-1	1

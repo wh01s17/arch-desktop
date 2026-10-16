@@ -1,0 +1,9 @@
+# Grupo opcional «apps»: aplicaciones elegidas en PLAN.md (D7).
+obsidian
+obs-studio
+kdenlive
+libreoffice-fresh
+qbittorrent
+strawberry
+xournalpp
+pinta

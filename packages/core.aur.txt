@@ -1,0 +1,12 @@
+# Paquetes del AUR que el escritorio necesita siempre. Sustituyen a los del
+# repositorio de Omarchy (PLAN.md §1.2-19).
+oh-my-posh-bin
+xdg-terminal-exec-git
+hyprland-preview-share-picker-git
+yaru-icon-theme
+ttfx
+tzupdate
+herdr-bin
+cliamp
+tensaku
+aether

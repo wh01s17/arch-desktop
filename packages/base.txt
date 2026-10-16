@@ -1,0 +1,31 @@
+# Sistema base. Siempre se instala.
+# Origen: omarchy-other.packages (Omarchy 4.0.4) sin los kernels ni drivers
+# de Omarchy; la GPU se elige en tiempo de ejecución (gpu-*.txt).
+base
+base-devel
+linux
+linux-headers
+linux-lts
+linux-lts-headers
+linux-firmware
+sof-firmware
+dkms
+btrfs-progs
+snapper
+snap-pac
+zram-generator
+git
+stow
+curl
+pacman-contrib
+pipewire
+pipewire-alsa
+pipewire-audio
+pipewire-jack
+pipewire-pulse
+libpulse
+gst-plugin-pipewire
+qt6-wayland
+gtk4-layer-shell
+egl-wayland
+webp-pixbuf-loader
