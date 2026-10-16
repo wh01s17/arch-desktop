@@ -562,8 +562,9 @@ stage_machine() {
   log "Perfil de equipo: $WH_PROFILE"
   local hypr_selector="$HOME/.config/hypr/machine-profile.lua"
   local kitty_selector="$HOME/.config/kitty/machine-profile.conf"
-  # VirtualBox's vmwgfx OpenGL makes Quickshell lose its Wayland connection
-  # ("Invalid argument"); Qt's software renderer works. Real GPUs keep OpenGL.
+  # VirtualBox's vmwgfx buffers make Quickshell and Kitty lose their Wayland
+  # connection; in VMs the apps Hyprland starts use Mesa's CPU OpenGL
+  # (default/hypr/envs.lua). Real GPUs are untouched.
   local vm_env="$HOME/.config/uwsm/env.d/20-vm-rendering"
   if [[ $DRY_RUN == true ]]; then
     if [[ $WH_PROFILE == auto ]]; then
@@ -571,14 +572,14 @@ stage_machine() {
     else
       info "[dry-run] $hypr_selector = return \"$WH_PROFILE\"; $kitty_selector = include profiles/$WH_PROFILE.conf"
     fi
-    [[ $WH_GPU == vm ]] && info "[dry-run] $vm_env = QT_QUICK_BACKEND=software"
+    [[ $WH_GPU == vm ]] && info "[dry-run] $vm_env = WH01S17_VM_RENDERING=1"
     return
   fi
   mkdir -p "$(dirname "$hypr_selector")" "$(dirname "$kitty_selector")" "$(dirname "$vm_env")"
   rm -f -- "$hypr_selector" "$kitty_selector" "$vm_env"
   if [[ $WH_GPU == vm ]]; then
-    printf '# Escrito por arch-desktop: renderizado por software en máquinas virtuales.\nexport QT_QUICK_BACKEND=software\n' >"$vm_env"
-    info 'Máquina virtual: Qt Quick con renderizado por software'
+    printf '# Escrito por arch-desktop: en máquinas virtuales las apps usan OpenGL por CPU.\nexport WH01S17_VM_RENDERING=1\n' >"$vm_env"
+    info 'Máquina virtual: las aplicaciones usarán OpenGL por CPU'
   fi
   if [[ $WH_PROFILE == auto ]]; then
     # monitors.lua uses preferred/auto plus what the Monitor panel saves.

@@ -259,6 +259,23 @@ def patch_runtime(root: Path, version: str) -> None:
         "  omarchy-sleep-lock.service\n",
     )
 
+    # Color and Style are singletons that reference each other. Color pushed
+    # values to Style while still being constructed (when ~/.config/.../shell.toml
+    # is missing the load fails synchronously), which left Color empty on slower
+    # machines: every Color.* read was undefined. Defer the push.
+    replace(root / "shell/Commons/Color.qml", "    Style.applyShellValues(merged)\n",
+            "    Qt.callLater(function() { Style.applyShellValues(merged) })\n")
+
+    # Virtual machines: VirtualBox's vmwgfx hands clients buffers the compositor
+    # rejects (wl_surface.attach: invalid arguments), which kills Quickshell and
+    # Kitty. install.sh sets WH01S17_VM_RENDERING=1 in VMs; Hyprland keeps the
+    # virtual GPU and the apps it starts use Mesa's CPU OpenGL.
+    replace(root / "default/hypr/envs.lua", "-- Hardware-specific environment.\n",
+            'if os.getenv("OMARCHY_VM_RENDERING") == "1" then\n'
+            '  hl.env("LIBGL_ALWAYS_SOFTWARE", "1")\n'
+            "end\n\n"
+            "-- Hardware-specific environment.\n")
+
     for relative, descriptions in DROPPED_BINDINGS.items():
         path = root / relative
         lines = path.read_text().splitlines(keepends=True)
@@ -455,6 +472,9 @@ def rename_tree(top: Path, keep: set[Path]) -> int:
     return changed
 
 
+# No timestamps or metadata, so regenerating gives byte-identical PNGs.
+PNG_REPRODUCIBLE = ["-strip", "-define", "png:exclude-chunks=date,time,tIME"]
+
 # Same rectangles as the W in themes/wh01s17/brand/logo.svg (y grows down).
 W_RECTS = ((0, 0, 80, 240), (128, 0, 80, 240), (256, 0, 80, 240), (64, 240, 80, 64), (192, 240, 80, 64))
 
@@ -467,7 +487,7 @@ def rebrand_font(path: Path) -> None:
     except ImportError:
         fail("fontTools is required: python -m venv /tmp/ft && /tmp/ft/bin/pip install fonttools, "
              "then run this tool with /tmp/ft/bin/python")
-    font = TTFont(path)
+    font = TTFont(path, recalcTimestamp=False)  # reproducible output
     for record in font["name"].names:
         text = record.toUnicode()
         if "omarchy" in text.lower():
@@ -546,7 +566,7 @@ def debrand(root: Path, dotfiles: Path) -> None:
         size = subprocess.run(["magick", "identify", "-format", "%wx%h", str(png)],
                               capture_output=True, text=True, check=True).stdout
         subprocess.run(["magick", "-background", "none", "-density", "300", str(brand_svg),
-                        "-resize", size, str(png)], check=True)
+                        "-resize", size, *PNG_REPRODUCIBLE, str(png)], check=True)
     font = Path("/usr/share/fonts/TTF/JetBrainsMonoNerdFont-Bold.ttf")
     for png in (root / f"default/sddm/{NAME}/logo.png", root / "default/plymouth/logo.png"):
         size = subprocess.run(["magick", "identify", "-format", "%wx%h", str(png)],
@@ -554,7 +574,7 @@ def debrand(root: Path, dotfiles: Path) -> None:
         args = ["magick", "-background", "none", "-fill", "#cbd5ce", "-size", size, "-gravity", "center"]
         if font.is_file():
             args += ["-font", str(font)]
-        subprocess.run([*args, f"label:{NAME}", str(png)], check=True)
+        subprocess.run([*args, f"label:{NAME}", *PNG_REPRODUCIBLE, str(png)], check=True)
 
 
 def main() -> None:
