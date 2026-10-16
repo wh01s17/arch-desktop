@@ -23,6 +23,7 @@ The result is a Stow package:
 from __future__ import annotations
 
 import argparse
+import re
 import datetime as dt
 import os
 import shutil
@@ -31,11 +32,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from rename import NAME, rename_name, rename_text  # noqa: E402
+
 PACKAGES = ("omarchy", "omarchy-settings")
 EXCLUDED_TOP = {"themes", "migrations"}
 USER_UNITS = (
     "bt-agent.service",
-    "omarchy-crash-watch.service",
     "omarchy-recover-internal-monitor.service",
     "omarchy-sleep-lock.service",
 )
@@ -170,17 +173,17 @@ def stub(path: Path, summary: str, body: str) -> None:
     write_script(
         path,
         "#!/bin/bash\n\n"
-        f"# omarchy:summary={summary}\n"
-        "# omarchy:hidden=true\n"
+        f"# {NAME}:summary={summary}\n"
+        f"# {NAME}:hidden=true\n"
         "#\n"
-        "# wh01s17: replaced in the frozen copy. Upstream ties this command to the\n"
-        "# Omarchy package repository or to a git checkout of OMARCHY_PATH, which\n"
-        "# here would be ~/dotfiles.\n\n"
+        "# Replaced for plain Arch: the original managed a remote package\n"
+        "# repository, uploaded data or treated the runtime path (here ~/dotfiles)\n"
+        "# as a git checkout.\n\n"
         f"{body}\n",
     )
 
 
-DISABLED = 'echo "$(basename "$0"): no disponible en la copia congelada de Omarchy (wh01s17)." >&2\nexit 1'
+DISABLED = 'echo "$(basename "$0"): no disponible en este sistema." >&2\nexit 1'
 
 
 def patch_runtime(root: Path, version: str) -> None:
@@ -253,8 +256,7 @@ def patch_runtime(root: Path, version: str) -> None:
         "  omarchy-migrate-notify.service \\\n"
         "  omarchy-fcitx5.service \\\n"
         "  omarchy-crash-watch.service\n",
-        "  omarchy-sleep-lock.service \\\n"
-        "  omarchy-crash-watch.service\n",
+        "  omarchy-sleep-lock.service\n",
     )
 
     for relative, descriptions in DROPPED_BINDINGS.items():
@@ -389,34 +391,170 @@ def write_docs(dest: Path, root: Path, versions: dict[str, str]) -> None:
         + "".join(f"{name}: {version}\n" for name, version in versions.items())
         + "Generada con arch-desktop/tools/vendor-omarchy.py.\n"
     )
+
+
+def write_readme(dest: Path, versions: dict[str, str]) -> None:
     (dest / "README.md").write_text(
         "# platform\n\n"
-        "Paquete Stow sólo para Arch puro: una copia congelada del runtime de\n"
-        f"Omarchy {versions['omarchy']} (licencia MIT, ver `.local/share/omarchy/LICENSE`).\n"
-        "Con él, los paquetes `desktop`, `terminal` y `maintenance` funcionan igual\n"
-        "que en Omarchy, sin el repositorio de paquetes de Omarchy.\n\n"
-        "No lo instales en un equipo con Omarchy: allí `/usr/share/omarchy` ya\n"
-        "proporciona lo mismo.\n\n"
+        "Paquete Stow sólo para Arch puro: el runtime del escritorio wh01s17\n"
+        f"(shell, comandos y valores por defecto). Es una copia congelada de Omarchy\n"
+        f"{versions['omarchy']} (licencia MIT, ver `.local/share/wh01s17/LICENSE` y `UPSTREAM`),\n"
+        "renombrada a wh01s17: comandos `wh01s17-*`, variables `WH01S17_*`,\n"
+        "`~/.config/wh01s17` y plugins internos `core.*`.\n\n"
         "| Ruta | Contenido |\n"
         "| --- | --- |\n"
-        "| `.local/share/omarchy/` | Runtime (`OMARCHY_PATH`): shell, `bin/`, `default/`, `config/`, `install/` |\n"
-        "| `.local/share/omarchy/system/` | Archivos que los paquetes instalan fuera de `/usr/share/omarchy`; `install.sh` elige cuáles aplicar |\n"
-        "| `.local/share/omarchy/nvim/config/` | Configuración LazyVim de `omarchy-nvim`; se copia a `~/.config/nvim` si falta |\n"
-        "| `.config/uwsm/env.d/10-omarchy` | Entorno de la sesión: `OMARCHY_PATH` y `PATH` |\n"
-        "| `.config/systemd/user/` | Servicios de usuario que apuntan a la copia |\n\n"
-        "## Diferencias con Omarchy\n\n"
-        "- Sin los temas de serie ni las migraciones: sólo se usa el tema `wh01s17`.\n"
-        "- `omarchy-update` actualiza Arch (pacman, AUR, mise) sin tocar el repositorio\n"
-        "  de Omarchy ni hacer `git pull` en `OMARCHY_PATH` (que aquí es `~/dotfiles`).\n"
-        "- Los comandos de canales, reinstalación y enlace de desarrollo están\n"
-        "  desactivados.\n\n"
-        "Regenerar desde un equipo con Omarchy:\n\n"
+        "| `.local/share/wh01s17/` | Runtime (`WH01S17_PATH`): shell, `bin/`, `default/`, `config/`, `install/` |\n"
+        "| `.local/share/wh01s17/system/` | Archivos de sistema; `install.sh` de arch-desktop elige cuáles aplicar |\n"
+        "| `.local/share/wh01s17/nvim/config/` | Configuración LazyVim; se copia a `~/.config/nvim` si falta |\n"
+        "| `.config/uwsm/env.d/10-wh01s17` | Entorno de la sesión: `WH01S17_PATH` y `PATH` |\n"
+        "| `.config/systemd/user/` | Servicios de usuario |\n\n"
+        "Los paquetes `desktop` y `terminal` de estos dotfiles siguen usando los\n"
+        "nombres de Omarchy (los usa tu Omarchy actual); en Arch, arch-desktop genera\n"
+        "una versión renombrada con `tools/arch-dotfiles.py`.\n\n"
+        "Regenerar desde un equipo con Omarchy (necesita fontTools):\n\n"
         "```bash\n"
         "~/workspace/arch-desktop/tools/vendor-omarchy.py --force\n"
         "```\n\n"
-        "Los cambios propios hechos a mano dentro de la copia se pierden al\n"
-        "regenerarla; revisa `git diff` antes de hacer commit.\n"
+        "Los cambios hechos a mano dentro de la copia se pierden al regenerarla.\n"
     )
+
+
+
+def rename_tree(top: Path, keep: set[Path]) -> int:
+    """Rename contents, file names, directory names and link targets."""
+    changed = 0
+    for directory, dirnames, filenames in os.walk(top, topdown=False):
+        base = Path(directory)
+        for name in filenames:
+            path = base / name
+            if path.is_symlink():
+                target = os.readlink(path)
+                new_target = rename_name(target)
+                if new_target != target:
+                    path.unlink()
+                    path.symlink_to(new_target)
+            elif path not in keep:
+                try:
+                    text = path.read_text()
+                except UnicodeDecodeError:
+                    text = None
+                if text is not None:
+                    new_text = rename_text(text)
+                    if new_text != text:
+                        mode = path.stat().st_mode
+                        path.write_text(new_text)
+                        path.chmod(mode)
+                        changed += 1
+            new_name = rename_name(name)
+            if new_name != name:
+                path.rename(base / new_name)
+        for name in dirnames:
+            new_name = rename_name(name)
+            if new_name != name:
+                (base / name).rename(base / new_name)
+    return changed
+
+
+# Same rectangles as the W in themes/wh01s17/brand/logo.svg (y grows down).
+W_RECTS = ((0, 0, 80, 240), (128, 0, 80, 240), (256, 0, 80, 240), (64, 240, 80, 64), (192, 240, 80, 64))
+
+
+def rebrand_font(path: Path) -> None:
+    """Rename the icon font and draw the W at U+E900, the Omarchy logo slot."""
+    try:
+        from fontTools.pens.ttGlyphPen import TTGlyphPen
+        from fontTools.ttLib import TTFont
+    except ImportError:
+        fail("fontTools is required: python -m venv /tmp/ft && /tmp/ft/bin/pip install fonttools, "
+             "then run this tool with /tmp/ft/bin/python")
+    font = TTFont(path)
+    for record in font["name"].names:
+        text = record.toUnicode()
+        if "omarchy" in text.lower():
+            record.string = rename_text(text)
+    glyph_name = font.getBestCmap()[0xE900]
+    old = font["glyf"][glyph_name]
+    old.recalcBounds(font["glyf"])
+    height = old.yMax - old.yMin
+    scale = height / 304
+    x0, top = old.xMin, old.yMax
+    pen = TTGlyphPen(font.getGlyphSet())
+    for x, y, w, h in W_RECTS:
+        left, right = x0 + x * scale, x0 + (x + w) * scale
+        upper, lower = top - y * scale, top - (y + h) * scale
+        pen.moveTo((round(left), round(lower)))   # clockwise: filled in TrueType
+        pen.lineTo((round(left), round(upper)))
+        pen.lineTo((round(right), round(upper)))
+        pen.lineTo((round(right), round(lower)))
+        pen.closePath()
+    font["glyf"][glyph_name] = pen.glyph()
+    advance, _ = font["hmtx"][glyph_name]
+    width = round(336 * scale)
+    font["hmtx"][glyph_name] = (max(advance, width + 2 * x0), x0)
+    font.save(path)
+
+
+def debrand(root: Path, dotfiles: Path) -> None:
+    """Remove what still links to Omarchy after the rename: its servers, pacman
+    repos, community links, AI skills that file issues upstream, and logos."""
+    for path in (root / "default/pacman", root / "default/agents"):
+        shutil.rmtree(path)
+    (root / "etc-overrides/os-release").unlink()
+
+    bin_dir = root / "bin"
+    stub(bin_dir / f"{NAME}-upload-log", "Upload logs (disabled)", DISABLED)
+    replace(bin_dir / f"{NAME}-debug",
+            'echo "Uploading debug log to logs.omarchy.org..."\n'
+            '    URL=$(curl -sf -F "file=@$LOG_FILE" -Fexpires=24 https://logs.omarchy.org/)',
+            'echo "La subida de registros está desactivada."\n    URL=""')
+    replace(bin_dir / f"{NAME}-update-confirm",
+            '"What\'s new: https://github.com/basecamp/omarchy/releases/latest"',
+            '"Se actualizarán los paquetes de Arch (pacman, AUR y mise)."')
+    replace(bin_dir / f"{NAME}-update",
+            "\\n\\nIf you need assistance, get help from the community at https://omarchy.org/discord", "")
+    replace(bin_dir / f"{NAME}-theme-install", '  echo -e "\\e[32mSee https://omarchy.org/themes/\\n\\e[0m"\n', "")
+    replace(bin_dir / f"{NAME}-theme-install", "example/omarchy-example-theme", "example/example-theme")
+    replace(bin_dir / f"{NAME}-theme-set-obsidian", "https://omarchy.org", "https://github.com/wh01s17")
+    for path in (bin_dir / f"{NAME}-plugin-add", root / "shell/README.md"):
+        replace(path, "acme/omarchy-weather", "acme/weather-plugin", count=0)
+    replace(root / "default/hypr/apps/jetbrains.lua",
+            " (see https://github.com/basecamp/omarchy/pull/5183#issuecomment-4189299971)", "")
+    unit = root / f"default/systemd/user/{NAME}-speaker-tuning.service"
+    unit.write_text("".join(l for l in unit.read_text().splitlines(True) if not l.startswith("Documentation=")))
+    menu = root / f"default/{NAME}/{NAME}-menu.jsonc"
+    lines = menu.read_text().splitlines(True)
+    dropped = [l for l in lines if l.lstrip().startswith(('"learn.' + NAME + '"', '"learn.community"'))]
+    if len(dropped) != 2:
+        fail(f"{menu}: expected the manual and community entries, found {len(dropped)}")
+    menu.write_text("".join(l for l in lines if l not in dropped))
+    replace(bin_dir / f"{NAME}-provision-user",
+            f'for skill in "${NAME.upper()}_PATH"/default/agents/skills/*/; do\n',
+            f'for skill in "${NAME.upper()}_PATH"/default/agents/skills/*/; do\n  [[ -d $skill ]] || continue\n')
+
+    # Logos: your brand instead of Omarchy's.
+    theme = dotfiles / "desktop/.config/omarchy/themes/wh01s17"
+    ascii_art = dotfiles / "desktop/.config/omarchy/branding/screensaver.txt"
+    brand_svg = theme / "brand/logo.svg"
+    if not (brand_svg.is_file() and ascii_art.is_file()):
+        fail(f"missing {brand_svg} or {ascii_art} (DOTFILES_DIR)")
+    for name in ("logo.txt", "icon.txt"):
+        shutil.copy2(ascii_art, root / name)
+    shutil.copy2(brand_svg, root / "logo.svg")
+    square = [root / "icon.png", root / f"system/usr/share/pixmaps/{NAME}.png",
+              *root.glob(f"system/usr/share/icons/hicolor/*/apps/{NAME}.png")]
+    for png in square:
+        size = subprocess.run(["magick", "identify", "-format", "%wx%h", str(png)],
+                              capture_output=True, text=True, check=True).stdout
+        subprocess.run(["magick", "-background", "none", "-density", "300", str(brand_svg),
+                        "-resize", size, str(png)], check=True)
+    font = Path("/usr/share/fonts/TTF/JetBrainsMonoNerdFont-Bold.ttf")
+    for png in (root / f"default/sddm/{NAME}/logo.png", root / "default/plymouth/logo.png"):
+        size = subprocess.run(["magick", "identify", "-format", "%wx%h", str(png)],
+                              capture_output=True, text=True, check=True).stdout
+        args = ["magick", "-background", "none", "-fill", "#cbd5ce", "-size", size, "-gravity", "center"]
+        if font.is_file():
+            args += ["-font", str(font)]
+        subprocess.run([*args, f"label:{NAME}", str(png)], check=True)
 
 
 def main() -> None:
@@ -460,22 +598,30 @@ def main() -> None:
     write_user_units(root / "default/systemd/user", dest / ".config/systemd/user")
     write_docs(dest, root, versions)
 
-    # Known harmless mentions: comments, the "is this the packaged path?" test in
-    # env-bootstrap, pacman --overwrite globs and the disabled dev tooling.
-    allowed = {"default/bash/env-bootstrap", "bin/omarchy-update-system-pkgs", "bin/omarchy-dev-status"}
-    leftovers = [
-        path for path in subprocess.run(
-            ["grep", "-rlF", "/usr/share/omarchy", str(root / "bin"), str(root / "shell"),
-             str(root / "default/hypr"), str(root / "default/bash"), str(root / "default/uwsm"),
-             str(root / "install")],
-            capture_output=True, text=True,
-        ).stdout.split()
-        if str(Path(path).relative_to(root)) not in allowed
-    ]
-    if leftovers:
-        print("Aviso: aún mencionan /usr/share/omarchy (revisar):", file=sys.stderr)
-        for path in leftovers:
-            print(f"  {path}", file=sys.stderr)
+    print(f"==> Renombrando Omarchy → {NAME}")
+    changed = rename_tree(dest, keep={root / "LICENSE", root / "UPSTREAM"})
+    root = dest / ".local/share" / NAME
+    print(f"    {changed} archivos con contenido renombrado")
+    for font_path in root.rglob(f"{NAME}.ttf"):
+        rebrand_font(font_path)
+    print("==> Quitando enlaces, servicios y logos de Omarchy")
+    debrand(root, Path(os.environ.get("DOTFILES_DIR", Path.home() / "dotfiles")))
+    write_readme(dest, versions)
+
+    remaining: dict[str, int] = {}
+    for path in dest.rglob("*"):
+        if path.is_symlink() or not path.is_file() or path.name in {"LICENSE", "UPSTREAM", "README.md"}:
+            continue
+        try:
+            found = re.findall(r"(?i)\\S*omarchy\\S*", path.read_text())
+        except UnicodeDecodeError:
+            continue
+        if found or "omarchy" in str(path.relative_to(dest)).lower():
+            remaining[str(path.relative_to(dest))] = len(found) or 1
+    if remaining:
+        print(f"Aviso: {sum(remaining.values())} menciones de omarchy sin renombrar:", file=sys.stderr)
+        for path, count in sorted(remaining.items())[:20]:
+            print(f"  {count:4} {path}", file=sys.stderr)
 
     for path in root.rglob("*"):
         if path.is_file() and not path.is_symlink() and path.parent.name == "bin":

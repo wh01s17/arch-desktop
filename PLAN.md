@@ -2,6 +2,9 @@
 
 > **Nota:** este plan se escribió cuando el instalador vivía en `post-install-linux/arch/`.
 > Ahora es este repositorio (`arch-desktop`): donde dice `arch/…`, lee la raíz del repo.
+> Desde entonces el runtime se renombró por completo a **wh01s17** (comandos `wh01s17-*`,
+> `WH01S17_*`, `~/.config/wh01s17`, plugins internos `core.*`): donde el plan dice
+> `omarchy-*` u `OMARCHY_PATH`, en el sistema instalado es `wh01s17-*` y `WH01S17_PATH`.
 
 > Propuesta del 2026-10-16. Origen analizado en el equipo actual (HP Omen
 > 15-ce0xx): Omarchy 4.0.4, Hyprland 0.56.2, Quickshell 0.3.1, `~/dotfiles`

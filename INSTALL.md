@@ -155,7 +155,7 @@ El instalador detecta el equipo y pregunta:
 | Nombre y correo de git | Los de `git config` si existen |
 
 Las respuestas quedan en `~/.config/wh01s17/machine.env`. Al terminar,
-reinicia: SDDM abre la sesión «Omarchy (Hyprland uwsm)» y el primer inicio
+reinicia: SDDM abre la sesión «wh01s17 (Hyprland uwsm)» y el primer inicio
 completa los servicios de usuario, el tema GTK y los avisos.
 
 En un equipo con perfil `auto`, coloca las pantallas en el panel Monitor de

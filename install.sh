@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Instala el escritorio wh01s17 (el de Omarchy 4 congelado + tus dotfiles) en
+# Instala el escritorio wh01s17 (runtime congelado + tus dotfiles) en
 # un Arch Linux recién instalado. Ver README.md y PLAN.md.
 set -Eeuo pipefail
 
@@ -15,14 +15,18 @@ readonly BLACKARCH_STRAP_SHA1="${BLACKARCH_STRAP_SHA1:-00688950aaf5e5804d2abebb8
 readonly PACKAGES_DIR="$script_dir/packages"
 readonly MACHINES_TSV="$script_dir/profiles/machines.tsv"
 readonly MACHINE_ENV="$HOME/.config/wh01s17/machine.env"
-readonly OMARCHY_COPY="$HOME/.local/share/omarchy"
-readonly STOW_PACKAGES=(platform desktop terminal maintenance)
-readonly STOW_NO_FOLDING_PACKAGES=(apps)
+readonly PLATFORM_DIR="$HOME/.local/share/wh01s17"
+readonly ARCH_BUILD_DIR="$DOTFILES_DIR/.arch-build"
+# DIR:PACKAGE. desktop and terminal keep Omarchy's names in ~/dotfiles (your
+# Omarchy machine uses them); tools/arch-dotfiles.py builds the wh01s17 version.
+readonly STOW_PACKAGES=("$DOTFILES_DIR:platform" "$DOTFILES_DIR:maintenance" "$ARCH_BUILD_DIR:desktop" "$ARCH_BUILD_DIR:terminal")
+readonly STOW_NO_FOLDING_PACKAGES=("$DOTFILES_DIR:apps")
+readonly SOURCE_PACKAGES=(platform maintenance apps desktop terminal)
 readonly OPTIONAL_GROUPS=(dev apps gaming virtualization pentest)
 readonly ALL_STAGES=(preflight bootstrap dotfiles decide packages aur stow seed machine system user hibernate shell services validate)
 readonly EXTERNAL_SHELL_PLUGIN_ID=io.github.sirjul1337.lock-explorer
 readonly EXTERNAL_SHELL_PLUGIN_URL=https://github.com/SirJul1337/omarchy-lock-explorer.git
-# Web apps Omarchy installs that you do not use (PLAN.md, D7).
+# Web apps the runtime installs that you do not use (PLAN.md, D7).
 readonly DROPPED_DESKTOP_FILES=(
   HEY X YouTube Zoom "Google Contacts" "Google Maps" "Google Messages" "Google Photos"
 )
@@ -48,8 +52,8 @@ usage() {
   cat <<EOF
 Uso: ./install.sh [opciones]
 
-Instala en Arch Linux el escritorio que usas en Omarchy: Hyprland, el shell de
-Omarchy 4.0.4 congelado (paquete Stow «platform»), tus dotfiles, tus apps y la
+Instala en Arch Linux el escritorio wh01s17: Hyprland, su shell (paquete Stow
+«platform»), tus dotfiles con los nombres de wh01s17, tus apps y la
 configuración de sistema. Detecta el equipo y pregunta lo necesario; guarda las
 respuestas en ~/.config/wh01s17/machine.env para no repetirlas.
 
@@ -163,7 +167,7 @@ stage_dotfiles() {
     return
   fi
   local package
-  for package in "${STOW_PACKAGES[@]}" "${STOW_NO_FOLDING_PACKAGES[@]}"; do
+  for package in "${SOURCE_PACKAGES[@]}"; do
     [[ -d $DOTFILES_DIR/$package ]] || die "Los dotfiles no tienen el paquete Stow «$package»."
   done
 }
@@ -410,18 +414,18 @@ stage_aur() {
 
 # --------------------------------------------------------------------- stow
 
-# Directories Omarchy or apps write into at runtime must be real directories,
+# Directories the shell or apps write into at runtime must be real directories,
 # or Stow would fold them into links and those writes would land in ~/dotfiles.
 prepare_real_dirs() {
   local -a dirs=(
-    "$HOME/.config/omarchy/plugins" "$HOME/.config/omarchy/themes" "$HOME/.config/omarchy/branding"
-    "$HOME/.config/omarchy/hooks" "$HOME/.config/omarchy/extensions" "$HOME/.config/omarchy/themed"
+    "$HOME/.config/wh01s17/plugins" "$HOME/.config/wh01s17/themes" "$HOME/.config/wh01s17/branding"
+    "$HOME/.config/wh01s17/hooks" "$HOME/.config/wh01s17/extensions" "$HOME/.config/wh01s17/themed"
     "$HOME/.config/systemd/user" "$HOME/.config/uwsm" "$HOME/.config/mise"
-    "$HOME/.config/environment.d" "$HOME/.local/bin" "$HOME/.local/state/omarchy"
+    "$HOME/.config/environment.d" "$HOME/.local/bin" "$HOME/.local/state/wh01s17"
     "$HOME/.local/share/applications" "$HOME/.local/share/icons/hicolor/256x256/apps"
   )
   local entry
-  for entry in "$DOTFILES_DIR"/platform/.local/share/omarchy/config/*/; do
+  for entry in "$DOTFILES_DIR"/platform/.local/share/wh01s17/config/*/; do
     [[ $(basename "$entry") == fcitx5 ]] && continue
     dirs+=("$HOME/.config/$(basename "$entry")")
   done
@@ -452,11 +456,12 @@ find_blocking_ancestor() {
 }
 
 backup_stow_conflicts() {
-  local package package_dir source relative target blocker
+  local entry package_dir source relative target blocker
   local -a conflicts=()
   local -A blocked=()
-  for package in "${STOW_PACKAGES[@]}" "${STOW_NO_FOLDING_PACKAGES[@]}"; do
-    package_dir="$DOTFILES_DIR/$package"
+  for entry in "${STOW_PACKAGES[@]}" "${STOW_NO_FOLDING_PACKAGES[@]}"; do
+    package_dir="${entry%%:*}/${entry#*:}"
+    [[ -d $package_dir ]] || continue
     while IFS= read -r -d '' source; do
       relative=${source#"$package_dir"/}
       target="$HOME/$relative"
@@ -491,19 +496,26 @@ stage_stow() {
   log 'Enlazando los dotfiles con Stow'
   prepare_real_dirs
   [[ $DRY_RUN == true && ! -d $DOTFILES_DIR ]] && return
+  log 'Generando desktop y terminal con los nombres de wh01s17 (.arch-build)'
+  run python3 -I "$script_dir/tools/arch-dotfiles.py" --dotfiles "$DOTFILES_DIR"
   backup_stow_conflicts
-  run stow -d "$DOTFILES_DIR" -t "$HOME" "${STOW_PACKAGES[@]}"
-  run stow --no-folding -d "$DOTFILES_DIR" -t "$HOME" "${STOW_NO_FOLDING_PACKAGES[@]}"
+  local entry
+  for entry in "${STOW_PACKAGES[@]}"; do
+    run stow --restow -d "${entry%%:*}" -t "$HOME" "${entry#*:}"
+  done
+  for entry in "${STOW_NO_FOLDING_PACKAGES[@]}"; do
+    run stow --restow --no-folding -d "${entry%%:*}" -t "$HOME" "${entry#*:}"
+  done
 }
 
 # --------------------------------------------------------------------- seed
 
-# Like /etc/skel on Omarchy: copy the stock config only where you have none.
+# Like /etc/skel: copy the stock config only where you have none.
 stage_seed() {
-  log 'Configuración por defecto de Omarchy donde no hay una tuya'
+  log 'Configuración por defecto donde no hay una tuya'
   local source relative target copied=0
-  local defaults="$OMARCHY_COPY/config"
-  [[ -d $defaults ]] || defaults="$DOTFILES_DIR/platform/.local/share/omarchy/config"
+  local defaults="$PLATFORM_DIR/config"
+  [[ -d $defaults ]] || defaults="$DOTFILES_DIR/platform/.local/share/wh01s17/config"
   while IFS= read -r -d '' source; do
     relative=${source#"$defaults"/}
     case $relative in
@@ -516,8 +528,8 @@ stage_seed() {
   done < <(find "$defaults" -type f -print0)
   info "$copied archivos copiados"
   if [[ ! -e $HOME/.config/nvim ]]; then
-    run cp -r "$OMARCHY_COPY/nvim/config" "$HOME/.config/nvim"
-    info 'Configuración de Neovim (LazyVim de omarchy-nvim) copiada'
+    run cp -r "$PLATFORM_DIR/nvim/config" "$HOME/.config/nvim"
+    info 'Configuración de Neovim (LazyVim) copiada'
   fi
 }
 
@@ -551,7 +563,7 @@ stage_machine() {
 stage_system() {
   log 'Configuración del sistema (sudo)'
   local -a env_args=(
-    "OMARCHY_PATH=$OMARCHY_COPY" "TARGET_USER=$USER" "WH_GPU=$WH_GPU"
+    "WH01S17_PATH=$PLATFORM_DIR" "TARGET_USER=$USER" "WH_GPU=$WH_GPU"
     "WH_GROUPS=$WH_GROUPS" "WH_AUTOLOGIN=$WH_AUTOLOGIN"
   )
   local status=0
@@ -571,18 +583,18 @@ stage_system() {
 # --------------------------------------------------------------------- user
 
 # Run from $HOME: mise and git look for config in the parent directories.
-omarchy_env() {
-  (cd "$HOME" && env OMARCHY_PATH="$OMARCHY_COPY" PATH="$OMARCHY_COPY/bin:$PATH" "$@")
+platform_env() {
+  (cd "$HOME" && env WH01S17_PATH="$PLATFORM_DIR" PATH="$PLATFORM_DIR/bin:$PATH" "$@")
 }
 
 stage_user() {
-  log 'Configuración de usuario de Omarchy (tema wh01s17, llavero, git, mise…)'
+  log 'Configuración de usuario (tema wh01s17, llavero, git, mise…)'
   local status=0
-  run omarchy_env OMARCHY_USER_NAME="$WH_USER_NAME" OMARCHY_USER_EMAIL="$WH_USER_EMAIL" \
-    OMARCHY_THEME_HEADLESS=1 omarchy-provision-user --force || status=$?
-  ((status == 0)) || note "omarchy-provision-user terminó con código $status; revisa su salida."
+  run platform_env WH01S17_USER_NAME="$WH_USER_NAME" WH01S17_USER_EMAIL="$WH_USER_EMAIL" \
+    WH01S17_THEME_HEADLESS=1 wh01s17-provision-user --force || status=$?
+  ((status == 0)) || note "wh01s17-provision-user terminó con código $status; revisa su salida."
 
-  # Omarchy points the browser to Chromium and mail to HEY; you use Firefox.
+  # Provisioning points the browser to Chromium; you use Firefox.
   run xdg-settings set default-web-browser firefox.desktop || note 'No se pudo fijar Firefox como navegador.'
   local name
   for name in "${DROPPED_DESKTOP_FILES[@]}"; do
@@ -590,18 +602,22 @@ stage_user() {
   done
   has_group dev || run rm -f -- "$HOME/.local/share/applications/Docker.desktop"
 
-  local plugin_dir="$HOME/.config/omarchy/plugins/$EXTERNAL_SHELL_PLUGIN_ID"
+  local plugin_dir="$HOME/.config/wh01s17/plugins/$EXTERNAL_SHELL_PLUGIN_ID"
   if [[ ! -e $plugin_dir ]]; then
     log "Plugin de terceros $EXTERNAL_SHELL_PLUGIN_ID"
-    run git clone --depth=1 "$EXTERNAL_SHELL_PLUGIN_URL" "$plugin_dir" ||
+    if run git clone --depth=1 "$EXTERNAL_SHELL_PLUGIN_URL" "$plugin_dir"; then
+      run rm -rf "$plugin_dir/.git"
+      run python3 -I "$script_dir/tools/arch-dotfiles.py" --in-place "$plugin_dir"
+    else
       note "No se pudo clonar $EXTERNAL_SHELL_PLUGIN_URL; shell.json lo usa."
+    fi
   fi
 }
 
 stage_hibernate() {
   [[ $WH_HIBERNATE == 1 ]] || return 0
   log 'Hibernación (swapfile en btrfs, resume y entrada de Limine; usa sudo)'
-  run omarchy_env omarchy-hibernation-setup --force || note 'No se pudo configurar la hibernación.'
+  run platform_env wh01s17-hibernation-setup --force || note 'No se pudo configurar la hibernación.'
 }
 
 # -------------------------------------------------------------------- shell
@@ -652,8 +668,8 @@ stage_services() {
     [[ -f $HOME/.config/systemd/user/$unit ]] || continue
     run systemctl --user enable "$unit" || note "No se pudo habilitar $unit."
   done
-  # Omarchy's own units (bt-agent, sleep lock, monitor recovery, crash watch)
-  # are enabled at the first graphical login by omarchy-provision-first-run.
+  # The runtime's own units (bt-agent, sleep lock, monitor recovery) are
+  # enabled at the first graphical login by wh01s17-provision-first-run.
   info 'bt-agent, bloqueo al suspender y recuperación del monitor se activan en el primer inicio de sesión.'
 }
 
@@ -666,16 +682,15 @@ stage_validate() {
     return
   fi
   local errors=0
-  omarchy_env Hyprland --verify-config --config "$HOME/.config/hypr/hyprland.lua" | tail -n 3 ||
+  platform_env Hyprland --verify-config --config "$HOME/.config/hypr/hyprland.lua" | tail -n 3 ||
     errors=$((errors + 1))
   zsh -n "$HOME/.zshrc" || errors=$((errors + 1))
   oh-my-posh print primary --config "$HOME/.config/oh-my-posh/active.omp.json" --shell zsh --plain >/dev/null ||
     errors=$((errors + 1))
-  [[ -s $HOME/.local/state/omarchy/current/theme.name ]] || { warn 'No hay tema aplicado.'; errors=$((errors + 1)); }
+  [[ -s $HOME/.local/state/wh01s17/current/theme.name ]] || { warn 'No hay tema aplicado.'; errors=$((errors + 1)); }
   if [[ -x $DOTFILES_DIR/test.sh ]]; then
-    # Same environment as the session (uwsm sets OMARCHY_PATH): without it
-    # hyprland.lua looks for /usr/share/omarchy, which only Omarchy has.
-    (cd "$DOTFILES_DIR" && OMARCHY_PATH="$OMARCHY_COPY" PATH="$OMARCHY_COPY/bin:$PATH" ./test.sh) ||
+    # Same environment as the session, where uwsm sets WH01S17_PATH.
+    (cd "$DOTFILES_DIR" && WH01S17_PATH="$PLATFORM_DIR" PATH="$PLATFORM_DIR/bin:$PATH" ./test.sh) ||
       errors=$((errors + 1))
   fi
   ((errors == 0)) || note "La validación encontró $errors problema(s)."
@@ -700,7 +715,7 @@ main() {
     warn 'Avisos:'
     printf '  - %s\n' "${WARNINGS[@]}" >&2
   fi
-  info 'Reinicia el equipo. SDDM abrirá la sesión «Omarchy (Hyprland uwsm)».'
+  info 'Reinicia el equipo. SDDM abrirá la sesión «wh01s17 (Hyprland uwsm)».'
   info 'En el primer inicio se completa la configuración (servicios de usuario, tema GTK, avisos).'
 }
 

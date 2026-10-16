@@ -43,7 +43,7 @@ detect_hardware() {
   DETECT_PROFILE=$(profile_for_product "$DETECT_PRODUCT")
 }
 
-# Same PCI ranges as omarchy-hw-nvidia-gsp / -without-gsp.
+# Same PCI ranges as wh01s17-hw-nvidia-gsp / -without-gsp.
 detect_gpus() {
   local device vendor class id
   DETECT_GPUS=()

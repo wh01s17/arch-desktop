@@ -1,42 +1,47 @@
-# Escritorio wh01s17 en Arch puro
+# arch-desktop
 
-Reproduce en Arch Linux, sin el repositorio ni los paquetes de Omarchy, el
-escritorio que usas en Omarchy 4: Hyprland en Lua, Omarchy Shell con tus
-plugins `wh01s17.*`, el tema `wh01s17`, Kitty, Zsh con Oh My Posh, tus atajos
-y tus aplicaciones.
+Instala en Arch Linux el escritorio **wh01s17**: Hyprland en Lua, su shell
+(barra, menú, paneles, notificaciones, bloqueo) con tus plugins `wh01s17.*`,
+el tema `wh01s17`, Kitty, Zsh con Oh My Posh, tus atajos y tus aplicaciones.
 
-La idea es **congelar** Omarchy 4.0.4, que tiene licencia MIT, en lugar de
-reescribirlo. Esa copia vive en tus dotfiles como el paquete Stow `platform`,
-y tus paquetes `desktop`, `terminal` y `maintenance` funcionan sobre ella sin
-cambios.
+Todo se llama wh01s17: los comandos son `wh01s17-*`, las variables
+`WH01S17_*`, la configuración vive en `~/.config/wh01s17`, la sesión se llama
+«wh01s17» y los plugins internos del shell son `core.*`.
 
 - Instalación paso a paso: [INSTALL.md](INSTALL.md)
-- Decisiones y fases: [PLAN.md](PLAN.md)
+- Historia y decisiones: [PLAN.md](PLAN.md)
 - Atajos: [KEYBINDINGS.md](KEYBINDINGS.md) (generado)
 
 ## Cómo encaja
 
 ```text
-arch-desktop/                       instalador (este repositorio)
+arch-desktop/                       este repositorio
 ├── install.sh                      etapas: paquetes, AUR, Stow, sistema, usuario…
-├── lib/                            common, detección de hardware, pasos de root
+├── lib/                            utilidades, detección de hardware, pasos de root
 ├── packages/*.txt                  listas oficiales (*.txt) y del AUR (*.aur.txt)
 ├── profiles/machines.tsv           modelo DMI → perfil de monitores y fuente
-├── reference/                      captura de tu Omarchy (atajos, opciones…)
-└── tools/                          capture-reference, vendor-omarchy, compare-binds…
+├── reference/                      captura del escritorio de origen (atajos, opciones…)
+└── tools/
+    ├── rename.py                   reglas de nombres (wh01s17, core.*)
+    ├── vendor-omarchy.py           genera el runtime (paquete platform)
+    ├── arch-dotfiles.py            genera desktop y terminal renombrados
+    └── capture-reference.sh, compare-binds.sh, keybindings-md.sh
 
 ~/dotfiles/                         configuración (Stow)
-├── platform/   (sólo Arch)         copia congelada de Omarchy → ~/.local/share/omarchy
-├── apps/       (sólo Arch)         mise, apps predeterminadas, webapps propias
-├── desktop/                        Hyprland, Omarchy Shell, plugins, tema
-├── terminal/                       Zsh, Kitty, Oh My Posh
+├── platform/   (sólo Arch)         runtime → ~/.local/share/wh01s17
+├── apps/       (sólo Arch)         mise, apps predeterminadas, webapps
+├── desktop/ terminal/              tu configuración, con los nombres originales
+├── .arch-build/ (generado)         desktop y terminal renombrados; es lo que se enlaza
 └── maintenance/                    timers de usuario
 ```
 
-Con `OMARCHY_PATH=~/.local/share/omarchy` (lo define
-`~/.config/uwsm/env.d/10-omarchy`, del paquete `platform`), Hyprland, el
-shell y los comandos `omarchy-*` usan la copia en lugar de
-`/usr/share/omarchy`.
+`~/.config/uwsm/env.d/10-wh01s17` (paquete `platform`) define
+`WH01S17_PATH=~/.local/share/wh01s17` y pone sus comandos en el `PATH`.
+
+**Mientras sigas usando el equipo de origen**, edita `~/dotfiles/desktop` y
+`~/dotfiles/terminal`. En Arch, `./install.sh --only stow` regenera
+`.arch-build/` a partir de ellos y vuelve a enlazar. No edites `.arch-build/`:
+se reescribe cada vez.
 
 ## Uso
 
@@ -59,60 +64,56 @@ arranque y el receptor Logitech, y pregunta por:
 - la hibernación y el autologin.
 
 Guarda las respuestas en `~/.config/wh01s17/machine.env`, así que volver a
-ejecutarlo no repite las preguntas. `./install.sh --help` muestra todas
-las opciones.
+ejecutarlo no repite las preguntas. `./install.sh --help` muestra todas las
+opciones.
 
 | Etapa | Qué hace |
 | --- | --- |
-| `preflight` | Arch, usuario normal, sin Omarchy, red, sudo |
+| `preflight` | Arch, usuario normal, red, sudo; se niega a ejecutarse sobre Omarchy |
 | `bootstrap` | git, stow, base-devel |
 | `dotfiles` | Clona o actualiza `~/dotfiles` |
 | `decide` | Detecta el hardware y pregunta (o lee `machine.env`) |
 | `packages` | Paquetes oficiales: `base`, `desktop`, `fonts`, `terminal`, grupos y GPU |
-| `aur` | yay, los sustitutos de lo que venía del repositorio de Omarchy, grupos, Limine/Snapper y BlackArch |
-| `stow` | `platform desktop terminal maintenance` y `apps` (sin plegar), con respaldo de conflictos |
-| `seed` | Configuración por defecto de Omarchy donde no hay una tuya; Neovim (LazyVim) |
+| `aur` | yay y los paquetes del AUR de uno en uno, sin tests ni paquetes `-debug`; Limine/Snapper y BlackArch |
+| `stow` | Genera `.arch-build/`; enlaza `platform`, `maintenance`, `desktop`, `terminal` y `apps` (sin plegar), con respaldo de conflictos |
+| `seed` | Configuración por defecto del runtime donde no hay una tuya; Neovim (LazyVim) |
 | `machine` | `machine-profile.lua` de Hyprland y `machine-profile.conf` de Kitty |
-| `system` | `lib/system-setup.sh` como root: archivos de sistema y pasos de configuración de Omarchy, firewall, hardware, SDDM con autologin, servicios, initramfs y Limine |
-| `user` | `omarchy-provision-user`: tema wh01s17, llavero, git, mise, skills, directorios XDG; Firefox como navegador; plugin lock-explorer |
-| `hibernate` | `omarchy-hibernation-setup` |
+| `system` | `lib/system-setup.sh` como root: archivos y pasos de sistema, firewall, hardware, SDDM con autologin, servicios, initramfs y Limine |
+| `user` | `wh01s17-provision-user`: tema, llavero, git, mise, directorios XDG; Firefox como navegador; plugin lock-explorer |
+| `hibernate` | `wh01s17-hibernation-setup` |
 | `shell` | Oh My Zsh, plugins, NVM y `chsh` a Zsh |
 | `services` | Timers de `maintenance` |
 | `validate` | `Hyprland --verify-config`, `zsh -n`, Oh My Posh, tema y `~/dotfiles/test.sh` |
 
-## Diferencias con Omarchy
+## Origen y licencia
 
-- Sin los temas de serie ni las migraciones: sólo existe `wh01s17`.
-- `omarchy update` actualiza Arch (pacman, AUR, mise) con un snapshot previo.
-  No toca el repositorio de Omarchy ni hace `git pull` en `OMARCHY_PATH`, que
-  aquí está dentro de `~/dotfiles`.
-- Desactivados: canales, reinstalación, `omarchy dev link`, restablecimiento
-  de fábrica y los `sudoers` sin contraseña de Omarchy.
-- Sin fcitx5 ni Plymouth.
-- Se quitan los atajos de las apps y webapps que no usas: ver
-  `reference/binds-dropped.tsv`.
-- Kernels `linux` y `linux-lts` en lugar de `linux-omarchy`. Los paquetes que
-  venían del repositorio de Omarchy salen del AUR (`packages/*.aur.txt`).
+El runtime es una copia congelada de [Omarchy](https://github.com/basecamp/omarchy)
+4.0.4 (licencia MIT), adaptada a Arch puro y renombrada por
+`tools/vendor-omarchy.py`:
 
-## Mantenimiento de la copia congelada
+- todos los nombres pasan a wh01s17 (`tools/rename.py`); las URLs se conservan;
+- sin repositorio de paquetes, migraciones, temas de serie, subida de
+  registros, enlaces a su comunidad ni skills de IA que reportan a su GitHub;
+- logos y fuente de iconos con la marca wh01s17;
+- `wh01s17 update` actualiza Arch (pacman, AUR, mise) con un snapshot previo;
+- atajos de apps que no usas eliminados (`reference/binds-dropped.tsv`).
 
-La copia se regenera desde un equipo con Omarchy:
+El aviso de copyright de la licencia MIT se conserva en
+`~/.local/share/wh01s17/LICENSE` y `UPSTREAM`, como exige la licencia.
+
+Para regenerar el runtime hace falta un equipo con Omarchy y fontTools:
 
 ```bash
-tools/vendor-omarchy.py --force      # escribe ~/dotfiles/platform
-git -C ~/dotfiles diff --stat platform    # revisa antes de hacer commit
+python -m venv /tmp/ft && /tmp/ft/bin/pip install fonttools
+/tmp/ft/bin/python tools/vendor-omarchy.py --force   # escribe ~/dotfiles/platform
+git -C ~/dotfiles diff --stat platform
 ```
-
-Cada adaptación a Arch está dentro de `tools/vendor-omarchy.py` y comprueba
-el texto original que sustituye. Si una versión nueva de Omarchy lo cambia,
-la herramienta falla en lugar de dejar la copia a medias. Los cambios hechos
-a mano dentro de `platform/` se pierden al regenerarla.
 
 ## Verificación
 
 ```bash
 bash -n install.sh lib/*.sh tools/*.sh
-python3 -m py_compile tools/vendor-omarchy.py
+python3 -m py_compile tools/*.py
 ./install.sh --dry-run --yes
 tools/compare-binds.sh               # dentro de la sesión nueva
 ```
