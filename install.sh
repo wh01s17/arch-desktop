@@ -361,18 +361,51 @@ install_blackarch() {
   fi
 }
 
+# User makepkg.conf: no -debug split packages (slow and noisy for prebuilt
+# binaries) and parallel jobs capped by RAM, about 2 GB per compile job.
+configure_makepkg() {
+  local conf="$HOME/.config/pacman/makepkg.conf" jobs mem_gb
+  mem_gb=$(awk '/^MemTotal:/ { printf "%d", $2 / 1024 / 1024 }' /proc/meminfo)
+  jobs=$((mem_gb / 2))
+  ((jobs > $(nproc))) && jobs=$(nproc)
+  ((jobs < 1)) && jobs=1
+  log "makepkg: sin paquetes -debug y $jobs trabajo(s) en paralelo (${mem_gb} GB de RAM)"
+  if [[ $DRY_RUN == true ]]; then
+    info "[dry-run] escribiría $conf"
+    return
+  fi
+  mkdir -p "$(dirname "$conf")"
+  cat >"$conf" <<EOC
+# Escrito por arch-desktop/install.sh (wh01s17). Se lee después de /etc/makepkg.conf.
+OPTIONS=("\${OPTIONS[@]/#debug/!debug}")
+MAKEFLAGS="-j$jobs"
+export CARGO_BUILD_JOBS=$jobs
+EOC
+}
+
 stage_aur() {
+  configure_makepkg
   install_yay
   has_group pentest && install_blackarch
-  local -a lists packages
+  local -a lists packages failed=()
   mapfile -t lists < <(aur_lists)
   mapfile -t packages < <(read_list "${lists[@]}" | sort -u)
   if [[ $DETECT_BOOTLOADER == limine && $DETECT_ROOT_FS == btrfs ]]; then
     packages+=(limine-mkinitcpio-hook limine-snapper-sync)
   fi
-  log "Instalando ${#packages[@]} paquetes del AUR"
-  run yay -S --needed --noconfirm --answerdiff None --answerclean None "${packages[@]}" ||
-    note 'Algún paquete del AUR falló; revisa la salida de yay y vuelve a ejecutar con --only aur.'
+  log "Instalando ${#packages[@]} paquetes del AUR (de uno en uno)"
+  local package
+  for package in "${packages[@]}"; do
+    pacman -Q "$package" >/dev/null 2>&1 && continue
+    info "→ $package"
+    # --nocheck: some packages build their test suite with full LTO, which
+    # can exhaust the RAM of a small machine or VM.
+    run yay -S --needed --noconfirm --answerdiff None --answerclean None \
+      --mflags --nocheck "$package" || failed+=("$package")
+  done
+  if ((${#failed[@]})); then
+    note "Paquetes del AUR que fallaron: ${failed[*]}. Reintenta con: ./install.sh --only aur"
+  fi
 }
 
 # --------------------------------------------------------------------- stow
