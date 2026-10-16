@@ -1,9 +1,9 @@
 # Atajos del escritorio wh01s17
 
-Generado con `arch/tools/keybindings-md.sh` a partir de los atajos reales de
+Generado con `tools/keybindings-md.sh` a partir de los atajos reales de
 Hyprland. Son los de Omarchy 4.0.4 más los tuyos de
 `~/dotfiles/desktop/.config/hypr/bindings.lua`, sin los descartados en
-`arch/reference/binds-dropped.tsv`. En la sesión, Super + K muestra la misma
+`reference/binds-dropped.tsv`. En la sesión, Super + K muestra la misma
 lista.
 
 `code:10` … `code:19` son las teclas 1 … 0 de la fila superior.

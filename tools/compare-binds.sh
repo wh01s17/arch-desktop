@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Compara los atajos de la sesión de Hyprland actual con la referencia
-# capturada en Omarchy (arch/reference/binds.json).
+# capturada en Omarchy (reference/binds.json).
 #
 # Uso (dentro de la sesión nueva):
-#   arch/tools/compare-binds.sh                  # usa hyprctl binds -j
-#   arch/tools/compare-binds.sh otro-binds.json  # compara un archivo
+#   tools/compare-binds.sh                  # usa hyprctl binds -j
+#   tools/compare-binds.sh otro-binds.json  # compara un archivo
 #
 # Los atajos descartados a propósito están en reference/binds-dropped.tsv
 # (combinación<TAB>descripción) y no cuentan como faltantes.

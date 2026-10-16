@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Captura el estado de referencia del escritorio Omarchy actual (Fase 0 de
-# arch/PLAN.md): atajos, opciones de Hyprland, paquetes, servicios, arranque y
+# PLAN.md): atajos, opciones de Hyprland, paquetes, servicios, arranque y
 # btrfs. Ejecutar dentro de la sesión de Hyprland, antes de reinstalar.
 set -Eeuo pipefail
 
@@ -12,9 +12,9 @@ keep_uuids=false
 
 usage() {
   cat <<'EOF'
-Uso: arch/tools/capture-reference.sh [--out DIR] [--no-sudo] [--keep-uuids]
+Uso: tools/capture-reference.sh [--out DIR] [--no-sudo] [--keep-uuids]
 
-Escribe en arch/reference/ (o DIR) la referencia del escritorio actual:
+Escribe en reference/ (o DIR) la referencia del escritorio actual:
   binds.json            atajos efectivos (hyprctl binds -j)
   binds.tsv             atajos legibles: combinación, opciones y descripción
   options.tsv           valores efectivos de opciones de Hyprland

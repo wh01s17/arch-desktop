@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# Funciones compartidas por arch/install.sh. Se cargan con `source`.
+# Funciones compartidas por install.sh. Se cargan con `source`.
 
 log() { printf '\n\033[1;32m==>\033[0m %s\n' "$1"; }
 info() { printf '    %s\n' "$1"; }
@@ -109,7 +109,7 @@ load_machine_env() {
 save_machine_env() {
   local content
   content=$(cat <<EOF
-# Respuestas de arch/install.sh para este equipo. Bórralo o usa
+# Respuestas de install.sh para este equipo. Bórralo o usa
 # --reconfigure para que vuelva a preguntar.
 WH_PROFILE=$(printf '%q' "$WH_PROFILE")
 WH_KITTY_FONT_SIZE=$(printf '%q' "$WH_KITTY_FONT_SIZE")

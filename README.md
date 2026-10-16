@@ -17,7 +17,7 @@ cambios.
 ## Cómo encaja
 
 ```text
-post-install-linux/arch/            instalador (este directorio)
+arch-desktop/                       instalador (este repositorio)
 ├── install.sh                      etapas: paquetes, AUR, Stow, sistema, usuario…
 ├── lib/                            common, detección de hardware, pasos de root
 ├── packages/*.txt                  listas oficiales (*.txt) y del AUR (*.aur.txt)
@@ -43,10 +43,10 @@ shell y los comandos `omarchy-*` usan la copia en lugar de
 En un Arch recién instalado (ver [INSTALL.md](INSTALL.md)):
 
 ```bash
-git clone https://github.com/wh01s17/post-install-linux.git ~/workspace/post-install-linux
-cd ~/workspace/post-install-linux
-./arch/install.sh --dry-run
-./arch/install.sh
+git clone https://github.com/wh01s17/arch-desktop.git ~/workspace/arch-desktop
+cd ~/workspace/arch-desktop
+./install.sh --dry-run
+./install.sh
 ```
 
 El instalador detecta el modelo, la GPU, las pantallas, la batería, el
@@ -59,7 +59,7 @@ arranque y el receptor Logitech, y pregunta por:
 - la hibernación y el autologin.
 
 Guarda las respuestas en `~/.config/wh01s17/machine.env`, así que volver a
-ejecutarlo no repite las preguntas. `./arch/install.sh --help` muestra todas
+ejecutarlo no repite las preguntas. `./install.sh --help` muestra todas
 las opciones.
 
 | Etapa | Qué hace |
@@ -99,7 +99,7 @@ las opciones.
 La copia se regenera desde un equipo con Omarchy:
 
 ```bash
-arch/tools/vendor-omarchy.py --force      # escribe ~/dotfiles/platform
+tools/vendor-omarchy.py --force      # escribe ~/dotfiles/platform
 git -C ~/dotfiles diff --stat platform    # revisa antes de hacer commit
 ```
 
@@ -111,8 +111,8 @@ a mano dentro de `platform/` se pierden al regenerarla.
 ## Verificación
 
 ```bash
-bash -n arch/install.sh arch/lib/*.sh arch/tools/*.sh
-python3 -m py_compile arch/tools/vendor-omarchy.py
-./arch/install.sh --dry-run --yes
-arch/tools/compare-binds.sh               # dentro de la sesión nueva
+bash -n install.sh lib/*.sh tools/*.sh
+python3 -m py_compile tools/vendor-omarchy.py
+./install.sh --dry-run --yes
+tools/compare-binds.sh               # dentro de la sesión nueva
 ```

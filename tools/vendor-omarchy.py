@@ -8,7 +8,7 @@ Arch. Every patch checks the exact upstream text it replaces, so a different
 Omarchy version fails loudly instead of being half-patched.
 
 Usage:
-    arch/tools/vendor-omarchy.py [--source /usr/share/omarchy]
+    tools/vendor-omarchy.py [--source /usr/share/omarchy]
                                  [--dest ~/dotfiles/platform] [--force]
 
 The result is a Stow package:
@@ -122,7 +122,7 @@ BarWidget {
 }
 """
 
-# Bindings for apps and web apps the user does not use (arch/PLAN.md, D7).
+# Bindings for apps and web apps the user does not use (PLAN.md, D7).
 # Matched by the description argument of o.bind(...).
 DROPPED_BINDINGS = {
     "default/hypr/bindings/applications.lua": (
@@ -223,7 +223,7 @@ def patch_runtime(root: Path, version: str) -> None:
             patched += 1
     if patched == 0:
         fail("no ${OMARCHY_PATH:-/usr/share/omarchy} fallbacks found; review the patch")
-    # Root callers pass OMARCHY_PATH explicitly (arch/install.sh does).
+    # Root callers pass OMARCHY_PATH explicitly (install.sh does).
     replace(bin_dir / "omarchy-apply-lock",
             "export PATH=/usr/share/omarchy/bin:/usr/local/bin:/usr/bin:/bin",
             'export PATH="${OMARCHY_PATH:?OMARCHY_PATH requerido}/bin:/usr/local/bin:/usr/bin:/bin"')
@@ -387,7 +387,7 @@ def write_docs(dest: Path, root: Path, versions: dict[str, str]) -> None:
         "Copia congelada de Omarchy (https://github.com/basecamp/omarchy), licencia MIT.\n"
         f"Fecha: {today}\n"
         + "".join(f"{name}: {version}\n" for name, version in versions.items())
-        + "Generada con post-install-linux/arch/tools/vendor-omarchy.py.\n"
+        + "Generada con arch-desktop/tools/vendor-omarchy.py.\n"
     )
     (dest / "README.md").write_text(
         "# platform\n\n"
@@ -400,7 +400,7 @@ def write_docs(dest: Path, root: Path, versions: dict[str, str]) -> None:
         "| Ruta | Contenido |\n"
         "| --- | --- |\n"
         "| `.local/share/omarchy/` | Runtime (`OMARCHY_PATH`): shell, `bin/`, `default/`, `config/`, `install/` |\n"
-        "| `.local/share/omarchy/system/` | Archivos que los paquetes instalan fuera de `/usr/share/omarchy`; `arch/install.sh` elige cuáles aplicar |\n"
+        "| `.local/share/omarchy/system/` | Archivos que los paquetes instalan fuera de `/usr/share/omarchy`; `install.sh` elige cuáles aplicar |\n"
         "| `.local/share/omarchy/nvim/config/` | Configuración LazyVim de `omarchy-nvim`; se copia a `~/.config/nvim` si falta |\n"
         "| `.config/uwsm/env.d/10-omarchy` | Entorno de la sesión: `OMARCHY_PATH` y `PATH` |\n"
         "| `.config/systemd/user/` | Servicios de usuario que apuntan a la copia |\n\n"
@@ -412,7 +412,7 @@ def write_docs(dest: Path, root: Path, versions: dict[str, str]) -> None:
         "  desactivados.\n\n"
         "Regenerar desde un equipo con Omarchy:\n\n"
         "```bash\n"
-        "~/workspace/post-install-linux/arch/tools/vendor-omarchy.py --force\n"
+        "~/workspace/arch-desktop/tools/vendor-omarchy.py --force\n"
         "```\n\n"
         "Los cambios propios hechos a mano dentro de la copia se pierden al\n"
         "regenerarla; revisa `git diff` antes de hacer commit.\n"

@@ -1,7 +1,7 @@
 # Instalación de Arch con el escritorio wh01s17
 
 Pasos para pasar de un disco con Windows (o vacío) a tu escritorio actual
-sobre Arch puro. El instalador (`arch/install.sh`) hace casi todo; esta guía
+sobre Arch puro. El instalador (`install.sh`) hace casi todo; esta guía
 cubre lo que va antes: el sistema base con btrfs y Limine, igual que en tu
 Omarchy.
 
@@ -18,17 +18,17 @@ Omarchy.
 En el equipo con Omarchy:
 
 ```bash
-cd ~/workspace/post-install-linux
-arch/tools/capture-reference.sh        # pide sudo para btrfs y limine.conf
+cd ~/workspace/arch-desktop
+tools/capture-reference.sh        # pide sudo para btrfs y limine.conf
 git -C ~/dotfiles status               # sin cambios pendientes
-git add arch/reference && git commit -m "Capture Omarchy reference" && git push
+git add reference && git commit -m "Capture Omarchy reference" && git push
 git -C ~/dotfiles push
 ```
 
 Respalda fuera del equipo: `~/.ssh`, `~/.gnupg`, perfiles de navegador,
 bóvedas de Obsidian, `~/workspace` y cualquier `.env` o licencia.
 
-Para el arranque dual con Windows, sigue `omarchy/dual-boot.md` §1–3
+Para el arranque dual con Windows, sigue `omarchy/dual-boot.md` (repo privado post-install-linux) §1–3
 (preparar Windows, la USB y el firmware): no cambia en Arch.
 
 ## 2. Sistema base desde el ISO de Arch
@@ -59,7 +59,7 @@ Sin Windows: crea una ESP de 1 GB (`mkfs.fat -F32`) y el resto btrfs.
 Tu Omarchy usa el **nivel superior** del btrfs como raíz (`subvolid=5`), sin
 subvolúmenes `@`. Sólo hay dos subvolúmenes, y ambos los crea el instalador:
 `/.snapshots` (Snapper) y `/swap` (hibernación). Ver
-`arch/reference/btrfs.txt`.
+`reference/btrfs.txt`.
 
 ```bash
 opts=relatime,ssd,discard=async,space_cache=v2   # las opciones de tu fstab actual
@@ -129,24 +129,24 @@ umount -R /mnt && reboot
 ```
 
 Con `FIND_BOOTLOADERS=yes` (lo configura el instalador), Limine añade
-Windows solo. Si no aparece, sigue `omarchy/dual-boot.md` §6.
+Windows solo. Si no aparece, sigue `omarchy/dual-boot.md` (repo privado post-install-linux) §6.
 
 ## 3. Primer arranque y escritorio
 
 Entra en la TTY con tu usuario y conéctate a la red (`nmtui`). Después:
 
 ```bash
-git clone https://github.com/wh01s17/post-install-linux.git ~/workspace/post-install-linux
-cd ~/workspace/post-install-linux
-./arch/install.sh --dry-run      # revisa el plan sin tocar nada
-./arch/install.sh
+git clone https://github.com/wh01s17/arch-desktop.git ~/workspace/arch-desktop
+cd ~/workspace/arch-desktop
+./install.sh --dry-run      # revisa el plan sin tocar nada
+./install.sh
 ```
 
 El instalador detecta el equipo y pregunta:
 
 | Pregunta | Propuesta |
 | --- | --- |
-| Perfil de monitores y fuente | El del modelo en `arch/profiles/machines.tsv` (`omen`), o `auto` en un equipo nuevo |
+| Perfil de monitores y fuente | El del modelo en `profiles/machines.tsv` (`omen`), o `auto` en un equipo nuevo |
 | Tamaño de fuente de Kitty | Sólo con `auto`: 11, o 12 si hay una pantalla 4K |
 | Driver de GPU | Detectado: `nvidia-legacy` (GTX 10xx), `nvidia`, `amd`, `intel`, `vm` o `none` |
 | Grupos opcionales | `dev`, `apps`, `gaming`, `virtualization` sí; `pentest` no |
@@ -162,12 +162,12 @@ En un equipo con perfil `auto`, coloca las pantallas en el panel Monitor de
 la barra: la escala, la resolución y la disposición se guardan solas. Para
 convertirlo en un perfil con nombre, copia `profiles/hp-gray.lua` como base,
 añade su nombre al mapa de `monitors.lua` y su modelo a
-`arch/profiles/machines.tsv`.
+`profiles/machines.tsv`.
 
 ## 4. Comprobaciones
 
 ```bash
-arch/tools/compare-binds.sh          # atajos frente a Omarchy (sin los descartados)
+tools/compare-binds.sh          # atajos frente a Omarchy (sin los descartados)
 hyprctl configerrors                 # vacío
 systemctl --failed; systemctl --user --failed
 nvidia-smi                           # con GPU NVIDIA
@@ -182,10 +182,10 @@ Chrome, VS Code y Obsidian, y arrancar un snapshot y Windows desde Limine.
 ## 5. Volver a ejecutar o cambiar decisiones
 
 ```bash
-./arch/install.sh                       # idempotente; reutiliza machine.env
-./arch/install.sh --reconfigure         # vuelve a preguntar
-./arch/install.sh --only "stow seed"    # sólo algunas etapas
-./arch/install.sh --groups "dev apps" --gpu nvidia --yes   # sin preguntas
+./install.sh                       # idempotente; reutiliza machine.env
+./install.sh --reconfigure         # vuelve a preguntar
+./install.sh --only "stow seed"    # sólo algunas etapas
+./install.sh --groups "dev apps" --gpu nvidia --yes   # sin preguntas
 ```
 
 Etapas: `preflight bootstrap dotfiles decide packages aur stow seed machine

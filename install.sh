@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Instala el escritorio wh01s17 (el de Omarchy 4 congelado + tus dotfiles) en
-# un Arch Linux recién instalado. Ver arch/README.md y arch/PLAN.md.
+# un Arch Linux recién instalado. Ver README.md y PLAN.md.
 set -Eeuo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -46,7 +46,7 @@ WH_USER_NAME="" WH_USER_EMAIL=""
 
 usage() {
   cat <<EOF
-Uso: ./arch/install.sh [opciones]
+Uso: ./install.sh [opciones]
 
 Instala en Arch Linux el escritorio que usas en Omarchy: Hyprland, el shell de
 Omarchy 4.0.4 congelado (paquete Stow «platform»), tus dotfiles, tus apps y la

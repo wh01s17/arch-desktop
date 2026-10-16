@@ -1,5 +1,8 @@
 # Plan de implementación: escritorio wh01s17 en Arch puro
 
+> **Nota:** este plan se escribió cuando el instalador vivía en `post-install-linux/arch/`.
+> Ahora es este repositorio (`arch-desktop`): donde dice `arch/…`, lee la raíz del repo.
+
 > Propuesta del 2026-10-16. Origen analizado en el equipo actual (HP Omen
 > 15-ce0xx): Omarchy 4.0.4, Hyprland 0.56.2, Quickshell 0.3.1, `~/dotfiles`
 > en `a4a2bd2` (con cambios sin commit) y el prototipo `arch/` de `67d2284`.

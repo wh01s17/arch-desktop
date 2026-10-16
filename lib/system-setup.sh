@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Configuración del sistema como root. La llama arch/install.sh con:
+# Configuración del sistema como root. La llama install.sh con:
 #   sudo env OMARCHY_PATH=… TARGET_USER=… WH_GPU=… WH_GROUPS=… \
 #     WH_AUTOLOGIN=… bash lib/system-setup.sh
 # Reutiliza los pasos del instalador de Omarchy que hay en la copia congelada
@@ -117,7 +117,7 @@ fi
 
 step 'Hardware (detección automática de Omarchy)'
 # Each script checks its own hardware; GPU packages are already installed by
-# arch/install.sh, so omarchy-pkg-add finds them and only writes the config.
+# install.sh, so omarchy-pkg-add finds them and only writes the config.
 while read -r line; do
   [[ $line =~ run_logged\ \"\$OMARCHY_INSTALL/([^\"]+)\" ]] || continue
   leaf "${BASH_REMATCH[1]}"
@@ -188,7 +188,7 @@ if installed limine-mkinitcpio-hook && [[ $(findmnt -no FSTYPE /) == btrfs ]]; t
   hooks+=(btrfs-overlayfs)
 fi
 {
-  echo '# Escrito por post-install-linux/arch (wh01s17).'
+  echo '# Escrito por arch-desktop (wh01s17).'
   echo "HOOKS=(${hooks[*]})"
   [[ -f /etc/vconsole.conf ]] && echo 'FILES+=(/etc/vconsole.conf)'
 } >/etc/mkinitcpio.conf.d/wh01s17_hooks.conf
@@ -204,7 +204,7 @@ KERNEL_CMDLINE[default]+="$cmdline"
 EOF
   fi
   install -D -m 0644 /dev/stdin /etc/limine-entry-tool.d/wh01s17.conf <<'EOF'
-# Escrito por post-install-linux/arch (wh01s17), a partir de omarchy-defaults.conf.
+# Escrito por arch-desktop (wh01s17), a partir de omarchy-defaults.conf.
 TARGET_OS_NAME="Arch Linux"
 ENABLE_LIMINE_FALLBACK=yes
 FIND_BOOTLOADERS=yes
