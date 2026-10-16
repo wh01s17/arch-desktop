@@ -420,7 +420,7 @@ prepare_real_dirs() {
   local -a dirs=(
     "$HOME/.config/wh01s17/plugins" "$HOME/.config/wh01s17/themes" "$HOME/.config/wh01s17/branding"
     "$HOME/.config/wh01s17/hooks" "$HOME/.config/wh01s17/extensions" "$HOME/.config/wh01s17/themed"
-    "$HOME/.config/systemd/user" "$HOME/.config/uwsm" "$HOME/.config/mise"
+    "$HOME/.config/systemd/user" "$HOME/.config/uwsm/env.d" "$HOME/.config/mise"
     "$HOME/.config/environment.d" "$HOME/.local/bin" "$HOME/.local/state/wh01s17"
     "$HOME/.local/share/applications" "$HOME/.local/share/icons/hicolor/256x256/apps"
   )
@@ -539,16 +539,24 @@ stage_machine() {
   log "Perfil de equipo: $WH_PROFILE"
   local hypr_selector="$HOME/.config/hypr/machine-profile.lua"
   local kitty_selector="$HOME/.config/kitty/machine-profile.conf"
+  # VirtualBox's vmwgfx OpenGL makes Quickshell lose its Wayland connection
+  # ("Invalid argument"); Qt's software renderer works. Real GPUs keep OpenGL.
+  local vm_env="$HOME/.config/uwsm/env.d/20-vm-rendering"
   if [[ $DRY_RUN == true ]]; then
     if [[ $WH_PROFILE == auto ]]; then
       info "[dry-run] borraría $hypr_selector; $kitty_selector = font_size $WH_KITTY_FONT_SIZE"
     else
       info "[dry-run] $hypr_selector = return \"$WH_PROFILE\"; $kitty_selector = include profiles/$WH_PROFILE.conf"
     fi
+    [[ $WH_GPU == vm ]] && info "[dry-run] $vm_env = QT_QUICK_BACKEND=software"
     return
   fi
-  mkdir -p "$(dirname "$hypr_selector")" "$(dirname "$kitty_selector")"
-  rm -f -- "$hypr_selector" "$kitty_selector"
+  mkdir -p "$(dirname "$hypr_selector")" "$(dirname "$kitty_selector")" "$(dirname "$vm_env")"
+  rm -f -- "$hypr_selector" "$kitty_selector" "$vm_env"
+  if [[ $WH_GPU == vm ]]; then
+    printf '# Escrito por arch-desktop: renderizado por software en máquinas virtuales.\nexport QT_QUICK_BACKEND=software\n' >"$vm_env"
+    info 'Máquina virtual: Qt Quick con renderizado por software'
+  fi
   if [[ $WH_PROFILE == auto ]]; then
     # monitors.lua uses preferred/auto plus what the Monitor panel saves.
     printf 'font_size %s\n' "$WH_KITTY_FONT_SIZE" >"$kitty_selector"
