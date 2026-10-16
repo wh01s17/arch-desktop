@@ -387,6 +387,28 @@ export CARGO_BUILD_JOBS=$jobs
 EOC
 }
 
+# AUR packages that verify upstream signatures need the vendor's key first.
+# package → "key URL|full fingerprint" (fingerprint from the PKGBUILD's validpgpkeys).
+declare -A AUR_SIGNING_KEYS=(
+  [spotify]="https://download.spotify.com/debian/pubkey_5384CE82BA52C83A.gpg|E1096BCBFF6D418796DE78515384CE82BA52C83A"
+)
+
+import_aur_key() {
+  local package=$1 url fingerprint
+  [[ -n ${AUR_SIGNING_KEYS[$package]:-} ]] || return 0
+  url=${AUR_SIGNING_KEYS[$package]%%|*}
+  fingerprint=${AUR_SIGNING_KEYS[$package]#*|}
+  gpg --list-keys "$fingerprint" >/dev/null 2>&1 && return 0
+  info "Importando la clave de firma de $package"
+  if [[ $DRY_RUN == true ]]; then
+    info "[dry-run] curl -sS $url | gpg --import"
+    return 0
+  fi
+  curl -fsS "$url" | gpg --import 2>/dev/null
+  gpg --list-keys "$fingerprint" >/dev/null 2>&1 ||
+    { note "La clave importada para $package no tiene la huella $fingerprint."; return 1; }
+}
+
 stage_aur() {
   configure_makepkg
   install_yay
@@ -402,6 +424,7 @@ stage_aur() {
   for package in "${packages[@]}"; do
     pacman -Q "$package" >/dev/null 2>&1 && continue
     info "→ $package"
+    import_aur_key "$package" || { failed+=("$package"); continue; }
     # --nocheck: some packages build their test suite with full LTO, which
     # can exhaust the RAM of a small machine or VM.
     run yay -S --needed --noconfirm --answerdiff None --answerclean None \
