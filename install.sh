@@ -673,7 +673,10 @@ stage_validate() {
     errors=$((errors + 1))
   [[ -s $HOME/.local/state/omarchy/current/theme.name ]] || { warn 'No hay tema aplicado.'; errors=$((errors + 1)); }
   if [[ -x $DOTFILES_DIR/test.sh ]]; then
-    (cd "$DOTFILES_DIR" && ./test.sh) || errors=$((errors + 1))
+    # Same environment as the session (uwsm sets OMARCHY_PATH): without it
+    # hyprland.lua looks for /usr/share/omarchy, which only Omarchy has.
+    (cd "$DOTFILES_DIR" && OMARCHY_PATH="$OMARCHY_COPY" PATH="$OMARCHY_COPY/bin:$PATH" ./test.sh) ||
+      errors=$((errors + 1))
   fi
   ((errors == 0)) || note "La validación encontró $errors problema(s)."
 }
