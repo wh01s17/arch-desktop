@@ -169,6 +169,9 @@ if [[ $WH_GPU == nvidia || $WH_GPU == nvidia-legacy ]]; then
     systemctl enable "$service" || failed+=("systemctl enable $service")
   done
 fi
+if [[ $WH_GPU == vm ]] && installed virtualbox-guest-utils; then
+  systemctl enable vboxservice.service || failed+=('systemctl enable vboxservice.service')
+fi
 if installed snapper; then
   systemctl enable snapper-cleanup.timer || failed+=('systemctl enable snapper-cleanup.timer')
 fi
