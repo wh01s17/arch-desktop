@@ -609,12 +609,15 @@ stage_hibernate() {
 stage_shell() {
   log 'Zsh: Oh My Zsh, plugins, NVM y shell predeterminada'
   local custom="$HOME/.oh-my-zsh/custom"
-  clone_or_pull https://github.com/ohmyzsh/ohmyzsh.git "$HOME/.oh-my-zsh" --depth=1
-  clone_or_pull https://github.com/zsh-users/zsh-autosuggestions.git "$custom/plugins/zsh-autosuggestions" --depth=1
-  clone_or_pull https://github.com/zsh-users/zsh-syntax-highlighting.git "$custom/plugins/zsh-syntax-highlighting" --depth=1
+  clone_or_pull https://github.com/ohmyzsh/ohmyzsh.git "$HOME/.oh-my-zsh" --depth=1 ||
+    note 'No se pudo clonar Oh My Zsh; vuelve a ejecutar con --only shell.'
+  clone_or_pull https://github.com/zsh-users/zsh-autosuggestions.git "$custom/plugins/zsh-autosuggestions" --depth=1 ||
+    note 'No se pudo clonar zsh-autosuggestions.'
+  clone_or_pull https://github.com/zsh-users/zsh-syntax-highlighting.git "$custom/plugins/zsh-syntax-highlighting" --depth=1 ||
+    note 'No se pudo clonar zsh-syntax-highlighting.'
   # plugins=(… zsh-sudo) needs zsh-sudo/zsh-sudo.plugin.zsh: link Oh My Zsh's sudo plugin.
   run mkdir -p "$custom/plugins/zsh-sudo"
-  [[ -e $custom/plugins/zsh-sudo/zsh-sudo.plugin.zsh ]] ||
+  [[ -e $custom/plugins/zsh-sudo/zsh-sudo.plugin.zsh || ! -d $HOME/.oh-my-zsh/plugins/sudo ]] ||
     run ln -s "$HOME/.oh-my-zsh/plugins/sudo/sudo.plugin.zsh" "$custom/plugins/zsh-sudo/zsh-sudo.plugin.zsh"
 
   local nvm_dir="$HOME/.config/nvm"

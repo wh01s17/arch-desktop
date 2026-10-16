@@ -164,6 +164,15 @@ done
 systemctl mask NetworkManager-wait-online.service
 # systemd-resolved needs the stub resolv.conf to serve NetworkManager's DNS.
 ln -sfn /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+# Omarchy only enables resolved and reboots; the installer keeps going (AUR,
+# mise, git clones), so start it now and let NetworkManager hand it the DNS.
+systemctl start systemd-resolved.service || failed+=('systemctl start systemd-resolved')
+systemctl try-restart NetworkManager.service || true
+for _ in {1..30}; do
+  getent hosts archlinux.org >/dev/null 2>&1 && break
+  sleep 1
+done
+getent hosts archlinux.org >/dev/null 2>&1 || failed+=('DNS tras activar systemd-resolved')
 if [[ $WH_GPU == nvidia || $WH_GPU == nvidia-legacy ]]; then
   for service in nvidia-suspend.service nvidia-resume.service nvidia-hibernate.service; do
     systemctl enable "$service" || failed+=("systemctl enable $service")
