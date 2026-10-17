@@ -186,6 +186,14 @@ if installed snapper; then
 fi
 
 step 'initramfs y arranque'
+# These hooks unlock LUKS with `encrypt` (cryptdevice=), like archinstall with a
+# password. A FIDO2/HSM install boots with rd.luks= and sd-encrypt instead;
+# rewriting its hooks would leave it unable to unlock the disk.
+if grep -qw 'rd\.luks\.[a-z]*' /proc/cmdline && ! grep -qw 'cryptdevice=[^ ]*' /proc/cmdline; then
+  printf '[!] El disco se desbloquea con rd.luks (FIDO2/HSM); no se cambia el initramfs.\n' >&2
+  printf '    Reinstala con cifrado por contraseña (cryptdevice=) o ajusta los hooks a mano.\n' >&2
+  exit 3
+fi
 hooks=(base udev keyboard autodetect microcode modconf kms keymap consolefont block)
 root_source=$(findmnt -no SOURCE / | sed 's/\[.*//')
 if lsblk -no TYPE "$root_source" 2>/dev/null | grep -qx crypt ||
