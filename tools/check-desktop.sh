@@ -103,7 +103,9 @@ if wants lock; then
   for _ in $(seq 20); do [[ $(lock_field locked) == true ]] && break; sleep 0.5; done
   if [[ $(lock_field locked) == true ]]; then
     ok "la pantalla se bloqueó"
-    [[ $(lock_field secure) == true ]] && ok "bloqueo seguro (ext-session-lock)" || bad "el bloqueo no es seguro"
+    # `locked` se marca al pedirlo; `secure`, cuando Hyprland confirma que cubrió todas las pantallas.
+    for _ in $(seq 20); do [[ $(lock_field secure) == true ]] && break; sleep 0.5; done
+    [[ $(lock_field secure) == true ]] && ok "bloqueo seguro (ext-session-lock)" || bad "el bloqueo no es seguro tras 10 s"
     [[ $(lock_field passwordPam) == true ]] && ok "PAM configurado para la contraseña" || bad "PAM sin configurar"
     echo "        >>> Desbloquea con tu contraseña (tienes 2 minutos)"
     for _ in $(seq 240); do [[ $(lock_field locked) == false ]] && break; sleep 0.5; done
@@ -147,13 +149,21 @@ fi
 
 if wants keys; then
   echo "== Teclas (pulsa cada una cuando se pida; 10 s por tecla)"
-  wait_change() { # wait_change COMANDO_LECTURA DESCRIPCIÓN
+  wait_change() { # wait_change COMANDO_LECTURA DESCRIPCIÓN up|down|yes
     local first now
+    sleep 1 # que termine de aplicarse la tecla anterior
     first=$($1)
-    echo "        >>> Pulsa: $2"
+    echo "        >>> Pulsa una vez: $2"
     for _ in $(seq 40); do
       now=$($1)
-      [[ $now != "$first" ]] && { ok "$2 ($first → $now)"; return; }
+      if [[ $now != "$first" ]]; then
+        case $3 in
+          up) ((now > first)) ;;
+          down) ((now < first)) ;;
+          *) [[ $now == "$3" ]] ;;
+        esac && ok "$2 ($first → $now)" || bad "$2: cambió al revés ($first → $now)"
+        return
+      fi
       sleep 0.25
     done
     bad "$2: no hubo cambio"
@@ -162,14 +172,14 @@ if wants keys; then
   if [[ -n $dev ]]; then
     bright() { brightnessctl -d "$dev" get; }
     start=$(bright)
-    wait_change bright "BAJAR brillo"
-    wait_change bright "SUBIR brillo"
+    wait_change bright "BAJAR brillo" down
+    wait_change bright "SUBIR brillo" up
     brightnessctl -d "$dev" -q set "$start"
   fi
   start=$(volume)
-  wait_change volume "BAJAR volumen"
-  wait_change volume "SUBIR volumen"
-  wait_change muted "SILENCIAR"
+  wait_change volume "BAJAR volumen" down
+  wait_change volume "SUBIR volumen" up
+  wait_change muted "SILENCIAR" yes
   [[ $(muted) == yes ]] && pactl set-sink-mute @DEFAULT_SINK@ 0
   pactl set-sink-volume @DEFAULT_SINK@ "$start%"
 fi
@@ -192,26 +202,27 @@ fi
 
 if wants apps; then
   echo "== Aplicaciones"
-  clients() { hyprctl clients -j | jq -r '.[] | "\(.address) \(.class)"'; }
+  addresses() { hyprctl clients -j | jq -r '.[].address' | sort; }
+  class_of() { hyprctl clients -j | jq -r ".[] | select(.address==\"$1\") | .class"; }
   for app in $APPS; do
     desktop=""
     for dir in "$HOME/.local/share/applications" /usr/share/applications; do
       [[ -f $dir/$app.desktop ]] && { desktop=$dir/$app.desktop; break; }
     done
     [[ -n $desktop ]] || { info "$app: no hay $app.desktop; se omite"; continue; }
-    before=$(clients | awk '{print $1}')
+    before=$(addresses)
     setsid gtk-launch "$app" >/dev/null 2>&1 &
     new=""
     for _ in $(seq 60); do
-      new=$(clients | grep -vxFf <(printf '%s\n' $before) | head -1)
+      new=$(comm -13 <(echo "$before") <(addresses) | head -1)
       [[ -n $new ]] && break
       sleep 0.5
     done
     if [[ -n $new ]]; then
       sleep 2
       shot "app-$app"
-      ok "$app abrió una ventana (${new#* })"
-      hyprctl dispatch closewindow "address:${new%% *}" >/dev/null 2>&1
+      ok "$app abrió una ventana ($(class_of "$new"))"
+      hyprctl dispatch closewindow "address:$new" >/dev/null 2>&1
     else
       bad "$app no abrió ninguna ventana en 30 s"
     fi
@@ -221,6 +232,8 @@ fi
 sleep_test() { # sleep_test suspend|hibernate SEGUNDOS PATRÓN_DEL_KERNEL
   local mode=$1 delay=$2 pattern=$3 start
   sudo -v || { bad "$mode: hace falta sudo para programar el despertador"; return; }
+  echo "        >>> No toques el teclado ni el touchpad hasta que vuelva (los Ryzen despiertan con ellos)"
+  sleep 5
   sync
   start=$(date +%s)
   sudo rtcwake -m no -s "$delay" >/dev/null || { bad "$mode: no se pudo programar el despertador (rtcwake)"; return; }
@@ -230,16 +243,23 @@ sleep_test() { # sleep_test suspend|hibernate SEGUNDOS PATRÓN_DEL_KERNEL
     journal_since "$start" | grep -qE "$pattern" && break
     sleep 1
   done
+  local elapsed=$(( $(date +%s) - start )) locked_now
+  locked_now=$(lock_field locked)
   if journal_since "$start" | grep -qE "$pattern"; then
-    ok "$mode y vuelta ($(( $(date +%s) - start ))s)"
+    if ((elapsed + 3 < delay)); then
+      bad "$mode: despertó antes del despertador (${elapsed}s de ${delay}s; IRQ de despertar: $(cat /sys/power/pm_wakeup_irq 2>/dev/null || echo '?'))"
+    else
+      ok "$mode y vuelta (${elapsed}s)"
+    fi
   else
     bad "$mode: no se ve la vuelta en el journal"
   fi
+  [[ $mode == suspend ]] && info "modo de suspensión: $(cat /sys/power/mem_sleep)"
   sleep 8
   shell_alive && ok "el shell sigue vivo" || bad "el shell no responde tras $mode"
   [[ $(nmcli -t -f STATE general 2>/dev/null) == connected* ]] && ok "red reconectada" || bad "sin red tras $mode ($(nmcli -t -f STATE general))"
-  [[ $(lock_field locked) == true ]] && ok "pantalla bloqueada al volver (desbloquéala)" || info "la pantalla no quedó bloqueada al volver"
-  journal_since "$start" | grep -iE 'error|fail' | grep -viE 'ACPI|firmware bug' | awk '!seen[$0]++' | head -6 | cut -c1-150 | sed 's/^/        /'
+  [[ $locked_now == true ]] && ok "pantalla bloqueada al volver (desbloquéala)" || bad "la pantalla no estaba bloqueada al volver"
+  journal_since "$start" | grep -iE 'error|fail' | grep -viE 'ACPI|firmware bug|IPv4 forwarding|dbus-monitor|pam message|ring init command' | awk '!seen[$0]++' | head -6 | cut -c1-150 | sed 's/^/        /'
 }
 
 if wants suspend; then
