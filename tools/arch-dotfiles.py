@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from rename import NAME, leftovers, rename_name, rename_text  # noqa: E402
+from rename import NAME, is_qml, leftovers, rename_name, rename_qml, rename_text  # noqa: E402
 
 SKIP_NAMES = {".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 SKIP_SUFFIXES = (".pyc",)
@@ -44,6 +44,8 @@ def convert_file(source: Path, target: Path) -> list[str]:
         shutil.copy2(source, target)
         return []
     new_text = rename_text(text)
+    if is_qml(target.name):
+        new_text = rename_qml(new_text)
     if target.suffix == ".lua":
         # Plain Arch has no /usr/share/wh01s17: fall back to the stowed copy.
         new_text = new_text.replace(f'"/usr/share/{NAME}"', f'(os.getenv("HOME") .. "/.local/share/{NAME}")')

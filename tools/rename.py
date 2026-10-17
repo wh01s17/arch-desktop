@@ -11,6 +11,11 @@ Rules, in order:
      already taken by your own plugins.
   3. Every other omarchy/Omarchy/OMARCHY becomes wh01s17/wh01s17/WH01S17
      (Wh01s17 inside camelCase identifiers).
+
+QML files (.qml, .js, qmldir) also get rename_qml: Qt 6.12 added a QtQuick
+`Color` singleton that hides the shell's qs.Commons.Color in every file that
+imports QtQuick (Color.bar reads undefined and the bar loses its widgets), so
+the shell's singleton is called Colors.
 """
 
 from __future__ import annotations
@@ -46,6 +51,10 @@ _UPPER = re.compile(r"OMARCHY")
 _TITLE_IN_WORD = re.compile(r"(?<=[A-Za-z0-9_])Omarchy|Omarchy(?=[A-Z])")
 _TITLE = re.compile(r"Omarchy")
 _LOWER = re.compile(r"omarchy")
+# qs.Commons.Color members (Color.bar, Color.accent, Color.qml): not Qt.Color, MyColor.x.
+_COLOR_SINGLETON = re.compile(r"(?<![\w.])Color(?=\.\w)")
+_COLOR_QMLDIR = re.compile(r"^singleton Color ", re.MULTILINE)
+QML_SUFFIXES = (".qml", ".js")
 
 
 def rename_text(text: str) -> str:
@@ -67,8 +76,19 @@ def rename_text(text: str) -> str:
     return re.sub(r"\0(\d+)\0", lambda m: kept[int(m.group(1))], text)
 
 
+def is_qml(name: str) -> bool:
+    return name.endswith(QML_SUFFIXES) or name == "qmldir"
+
+
+def rename_qml(text: str) -> str:
+    text = _COLOR_SINGLETON.sub("Colors", text)
+    return _COLOR_QMLDIR.sub("singleton Colors ", text)
+
+
 def rename_name(name: str) -> str:
     """A file or directory name (no URLs or plugin ids in paths)."""
+    if name == "Color.qml":
+        return "Colors.qml"
     name = _UPPER.sub(NAME.upper(), name)
     name = _TITLE_IN_WORD.sub(NAME.capitalize(), name)
     name = _TITLE.sub(NAME, name)

@@ -33,7 +33,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from rename import NAME, rename_name, rename_text  # noqa: E402
+from rename import NAME, is_qml, rename_name, rename_qml, rename_text  # noqa: E402
 
 PACKAGES = ("omarchy", "omarchy-settings")
 EXCLUDED_TOP = {"themes", "migrations"}
@@ -457,6 +457,8 @@ def rename_tree(top: Path, keep: set[Path]) -> int:
                     text = None
                 if text is not None:
                     new_text = rename_text(text)
+                    if is_qml(name):
+                        new_text = rename_qml(new_text)
                     if new_text != text:
                         mode = path.stat().st_mode
                         path.write_text(new_text)
