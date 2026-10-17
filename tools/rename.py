@@ -54,6 +54,9 @@ _LOWER = re.compile(r"omarchy")
 # qs.Commons.Color members (Color.bar, Color.accent, Color.qml): not Qt.Color, MyColor.x.
 _COLOR_SINGLETON = re.compile(r"(?<![\w.])Color(?=\.\w)")
 _COLOR_QMLDIR = re.compile(r"^singleton Color ", re.MULTILINE)
+# `import qs.Commons as Commons` reaches the singleton as Commons.Color (also in
+# QML that a plugin builds from strings, like lock-explorer's Designer.js).
+_COMMONS_ALIAS = re.compile(r"\bimport\s+qs\.Commons\s+as\s+(\w+)")
 QML_SUFFIXES = (".qml", ".js")
 
 
@@ -76,12 +79,15 @@ def rename_text(text: str) -> str:
     return re.sub(r"\0(\d+)\0", lambda m: kept[int(m.group(1))], text)
 
 
-def is_qml(name: str) -> bool:
-    return name.endswith(QML_SUFFIXES) or name == "qmldir"
+def is_qml(name: str, text: str = "") -> bool:
+    """QML sources, plus scripts that write shell QML (they import qs.Commons)."""
+    return name.endswith(QML_SUFFIXES) or name == "qmldir" or "qs.Commons" in text
 
 
 def rename_qml(text: str) -> str:
     text = _COLOR_SINGLETON.sub("Colors", text)
+    for alias in set(_COMMONS_ALIAS.findall(text)):
+        text = re.sub(rf"(?<![\w.]){re.escape(alias)}\.Color(?=\.\w)", f"{alias}.Colors", text)
     return _COLOR_QMLDIR.sub("singleton Colors ", text)
 
 

@@ -457,7 +457,7 @@ def rename_tree(top: Path, keep: set[Path]) -> int:
                     text = None
                 if text is not None:
                     new_text = rename_text(text)
-                    if is_qml(name):
+                    if is_qml(name, new_text):
                         new_text = rename_qml(new_text)
                     if new_text != text:
                         mode = path.stat().st_mode

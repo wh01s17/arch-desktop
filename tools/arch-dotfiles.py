@@ -44,7 +44,7 @@ def convert_file(source: Path, target: Path) -> list[str]:
         shutil.copy2(source, target)
         return []
     new_text = rename_text(text)
-    if is_qml(target.name):
+    if is_qml(target.name, new_text):
         new_text = rename_qml(new_text)
     if target.suffix == ".lua":
         # Plain Arch has no /usr/share/wh01s17: fall back to the stowed copy.
