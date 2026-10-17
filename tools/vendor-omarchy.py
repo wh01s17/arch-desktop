@@ -162,6 +162,38 @@ def replace(path: Path, old: str, new: str, count: int = 1) -> None:
     path.write_text(text.replace(old, new))
 
 
+# The lid pauses idle only if it was running, and remembers it in this marker
+# so opening the lid never undoes a "stay awake" you turned on yourself.
+LID_CLOSE = """#!/bin/bash
+
+# omarchy:summary=Reconcile displays and pause idle when the laptop lid closes
+# omarchy:group=system
+# omarchy:hidden=true
+
+marker="$HOME/.local/state/omarchy/lid-paused-idle"
+if [[ ! -f $HOME/.local/state/omarchy/indicators/stay-awake ]]; then
+  mkdir -p "${marker%/*}"
+  touch "$marker"
+  omarchy-shell -q idle disable
+fi
+omarchy-hyprland-monitor-clamshell
+"""
+
+LID_OPEN = """#!/bin/bash
+
+# omarchy:summary=Reconcile displays and resume idle when the laptop lid opens
+# omarchy:group=system
+# omarchy:hidden=true
+
+marker="$HOME/.local/state/omarchy/lid-paused-idle"
+if [[ -f $marker ]]; then
+  rm -f "$marker"
+  omarchy-shell -q idle enable
+fi
+omarchy-hyprland-monitor-clamshell
+"""
+
+
 def write_script(path: Path, body: str) -> None:
     path.write_text(body)
     path.chmod(0o755)
@@ -275,6 +307,15 @@ def patch_runtime(root: Path, version: str) -> None:
             '  hl.env("LIBGL_ALWAYS_SOFTWARE", "1")\n'
             "end\n\n"
             "-- Hardware-specific environment.\n")
+
+    # Closing the lid leaves the session exactly as it was: no lock, and idle
+    # (screensaver and idle lock) paused until the lid opens again. logind
+    # ignores the lid too (system/etc/systemd/logind.conf.d/30-ignore-lid-switch.conf).
+    write_script(root / "bin/omarchy-system-lid-close", LID_CLOSE)
+    write_script(root / "bin/omarchy-system-lid-open", LID_OPEN)
+    replace(root / "default/hypr/bindings/utilities.lua",
+            'o.bind("switch:off:Lid Switch", nil, "omarchy-hyprland-monitor-clamshell", { locked = true })',
+            'o.bind("switch:off:Lid Switch", nil, "omarchy-system-lid-open", { locked = true })')
 
     for relative, descriptions in DROPPED_BINDINGS.items():
         path = root / relative
@@ -403,9 +444,9 @@ def copy_system_files(root: Path) -> int:
 # the rest. Written with Omarchy names: the rename step converts them.
 OWN_SYSTEM_FILES = {
     "etc/systemd/logind.conf.d/30-ignore-lid-switch.conf": """\
-# Closing the lid never suspends, on battery or on AC. Hyprland still runs
-# omarchy-system-lid-close, so an undocked lid close locks the session and
-# reconciles displays; it just no longer puts the machine to sleep.
+# Closing the lid never suspends, on battery or on AC. Hyprland runs
+# omarchy-system-lid-close instead, which only reconciles displays and pauses
+# idle: the session stays exactly as it was, without locking.
 [Login]
 HandleLidSwitch=ignore
 HandleLidSwitchExternalPower=ignore
