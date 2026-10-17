@@ -11,7 +11,7 @@ source "$script_dir/lib/detect.sh"
 
 readonly DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/wh01s17/dotfiles.git}"
 readonly DOTFILES_DIR="${DOTFILES_DIR:-$HOME/dotfiles}"
-readonly BLACKARCH_STRAP_SHA1="${BLACKARCH_STRAP_SHA1:-00688950aaf5e5804d2abebb8d3d3ea1d28525ed}"
+readonly BLACKARCH_STRAP_SHA1="${BLACKARCH_STRAP_SHA1:-d338a4bb95d9e09f97508da68ac9e17d963b85f6}"
 readonly PACKAGES_DIR="$script_dir/packages"
 readonly MACHINES_TSV="$script_dir/profiles/machines.tsv"
 readonly MACHINE_ENV="$HOME/.config/wh01s17/machine.env"
