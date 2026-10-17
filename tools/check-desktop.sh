@@ -7,13 +7,13 @@
 #   tools/check-desktop.sh --suspend       además suspende y despierta solo (sudo)
 #   tools/check-desktop.sh --hibernate     además hiberna y despierta solo (sudo; escribe la clave de LUKS)
 #   tools/check-desktop.sh --only "panels lock"     sólo esas pruebas
-#   tools/check-desktop.sh --apps "firefox code"    apps a abrir (ids de los .desktop)
+#   tools/check-desktop.sh --apps "firefox typora"  apps a abrir (ids de los .desktop)
 #
 # Pruebas: panels lock brightness volume monitors apps keys suspend hibernate.
 # Informe en ~/check-desktop.txt y capturas en ~/check-desktop/.
 set -uo pipefail
 
-APPS="firefox code obsidian spotify"
+APPS="firefox com.microsoft.VSCode obsidian spotify"
 ONLY="panels lock brightness volume monitors apps"
 EXTRA=""
 while (($#)); do
