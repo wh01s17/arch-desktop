@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -26,6 +27,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from rename import NAME, is_qml, leftovers, rename_name, rename_qml, rename_text  # noqa: E402
 
 SKIP_NAMES = {".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
+
+# fastfetch: on Omarchy the OS line is Omarchy's version; on Arch, show the real
+# OS (fastfetch's os module reads /etc/os-release).
+FASTFETCH_OS = re.compile(
+    r'"type": "command",(\s*"key": "[^"]*OS",\s*"keyColor": "[^"]*"),\s*'
+    r'"text": "version=\$\(' + NAME + r'-version\)[^\n]*'
+)
 SKIP_SUFFIXES = (".pyc",)
 
 
@@ -46,6 +54,8 @@ def convert_file(source: Path, target: Path) -> list[str]:
     new_text = rename_text(text)
     if is_qml(target.name, new_text):
         new_text = rename_qml(new_text)
+    if target.name == "config.jsonc" and target.parent.name == "fastfetch":
+        new_text = FASTFETCH_OS.sub(r'"type": "os",\1', new_text)
     if target.suffix == ".lua":
         # Plain Arch has no /usr/share/wh01s17: fall back to the stowed copy.
         new_text = new_text.replace(f'"/usr/share/{NAME}"', f'(os.getenv("HOME") .. "/.local/share/{NAME}")')
