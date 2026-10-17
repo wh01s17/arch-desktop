@@ -4,3 +4,4 @@
 # El instalador propone el perfil cuyo modelo coincide; añade aquí cada equipo
 # nuevo (el del HP se puede ver con: cat /sys/class/dmi/id/product_name).
 OMEN by HP Laptop 15-ce0xx	omen
+HP Laptop 15-fc0xxx	hp-gray
