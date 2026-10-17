@@ -623,6 +623,19 @@ platform_env() {
   (cd "$HOME" && env WH01S17_PATH="$PLATFORM_DIR" PATH="$PLATFORM_DIR/bin:$PATH" "$@")
 }
 
+# VS Code does not recognise Hyprland as a desktop with a keyring and refuses
+# to store logins. Like the runtime's wh01s17-install-editor-vscode, point it
+# at gnome-keyring; keep the argv.json VS Code may already have written.
+configure_vscode_keyring() {
+  command -v code >/dev/null || return 0
+  local argv="$HOME/.vscode/argv.json"
+  if [[ ! -f $argv ]]; then
+    run install -D -m 0644 /dev/stdin "$argv" <<<$'{\n  "password-store": "gnome-libsecret"\n}'
+  elif ! grep -q '"password-store"' "$argv"; then
+    run sed -i '0,/^{/s//{\n  "password-store": "gnome-libsecret",/' "$argv"
+  fi
+}
+
 stage_user() {
   log 'Configuración de usuario (tema wh01s17, llavero, git, mise…)'
   local status=0
@@ -637,6 +650,8 @@ stage_user() {
     run rm -f -- "$HOME/.local/share/applications/$name.desktop"
   done
   has_group dev || run rm -f -- "$HOME/.local/share/applications/Docker.desktop"
+
+  configure_vscode_keyring
 
   local launcher
   for launcher in "${MISE_LAUNCHERS[@]}"; do
