@@ -17,6 +17,7 @@ Edit desktop/ and terminal/, not .arch-build/: it is rebuilt on every run
 from __future__ import annotations
 
 import argparse
+import filecmp
 import os
 import re
 import shutil
@@ -85,6 +86,57 @@ def build(source_root: Path, target_root: Path) -> dict[str, list[str]]:
     return remaining
 
 
+def same_entry(source: Path, target: Path) -> bool:
+    if source.is_symlink() or target.is_symlink():
+        return source.is_symlink() and target.is_symlink() and os.readlink(source) == os.readlink(target)
+    return (target.is_file() and source.stat().st_mode == target.stat().st_mode
+            and filecmp.cmp(source, target, shallow=False))
+
+
+def sync(staging: Path, target: Path) -> None:
+    """Make target match staging without ever removing a file that stays.
+
+    Your ~/.config links point into target, and Hyprland reloads as soon as
+    hyprland.lua changes: deleting and rebuilding the tree made it reload
+    while the file was missing ("cannot open hyprland.lua"). Changed files are
+    swapped in atomically, unchanged ones are left alone, stale ones removed.
+    """
+    wanted: set[Path] = set()
+    for directory, dirnames, filenames in os.walk(staging):
+        base = Path(directory)
+        relative = base.relative_to(staging)
+        target_dir = target / relative
+        if target_dir.is_symlink() or (target_dir.exists() and not target_dir.is_dir()):
+            target_dir.unlink()
+        target_dir.mkdir(parents=True, exist_ok=True)
+        links = [d for d in dirnames if (base / d).is_symlink()]
+        wanted.update(relative / d for d in dirnames if d not in links)
+        for name in filenames + links:
+            source, dest = base / name, target_dir / name
+            wanted.add(relative / name)
+            if dest.exists() or dest.is_symlink():
+                if same_entry(source, dest):
+                    continue
+                if dest.is_dir() and not dest.is_symlink():
+                    shutil.rmtree(dest)
+            temporary = target_dir / f".{name}.arch-build-new"
+            temporary.unlink(missing_ok=True)
+            if source.is_symlink():
+                temporary.symlink_to(os.readlink(source))
+            else:
+                shutil.copy2(source, temporary)
+            os.replace(temporary, dest)
+    for directory, dirnames, filenames in os.walk(target, topdown=False):
+        base = Path(directory)
+        relative = base.relative_to(target)
+        for name in filenames + [d for d in dirnames if (base / d).is_symlink()]:
+            if relative / name not in wanted:
+                (base / name).unlink()
+        for name in dirnames:
+            if not (base / name).is_symlink() and relative / name not in wanted:
+                shutil.rmtree(base / name)
+
+
 def rename_in_place(root: Path) -> dict[str, list[str]]:
     staging = root.with_name(root.name + ".renaming")
     shutil.rmtree(staging, ignore_errors=True)
@@ -113,8 +165,11 @@ def main() -> None:
             if not source.is_dir():
                 sys.exit(f"error: {source} does not exist")
             target = build_dir / package
-            shutil.rmtree(target, ignore_errors=True)
-            remaining.update({f"{package}/{k}": v for k, v in build(source, target).items()})
+            staging = build_dir / f".{package}.staging"
+            shutil.rmtree(staging, ignore_errors=True)
+            remaining.update({f"{package}/{k}": v for k, v in build(source, staging).items()})
+            sync(staging, target)
+            shutil.rmtree(staging)
         print(f"{', '.join(args.packages)} → {build_dir} ({NAME})")
 
     if remaining:
