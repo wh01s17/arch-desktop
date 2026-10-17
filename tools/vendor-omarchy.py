@@ -399,6 +399,28 @@ def copy_system_files(root: Path) -> int:
     return copied
 
 
+# System files of your own, not Omarchy's; installed by lib/system-setup.sh like
+# the rest. Written with Omarchy names: the rename step converts them.
+OWN_SYSTEM_FILES = {
+    "etc/systemd/logind.conf.d/30-ignore-lid-switch.conf": """\
+# Closing the lid never suspends, on battery or on AC. Hyprland still runs
+# omarchy-system-lid-close, so an undocked lid close locks the session and
+# reconciles displays; it just no longer puts the machine to sleep.
+[Login]
+HandleLidSwitch=ignore
+HandleLidSwitchExternalPower=ignore
+HandleLidSwitchDocked=ignore
+""",
+}
+
+
+def write_own_system_files(root: Path) -> None:
+    for relative, content in OWN_SYSTEM_FILES.items():
+        target = root / "system" / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content)
+
+
 def write_docs(dest: Path, root: Path, versions: dict[str, str]) -> None:
     (root / "LICENSE").write_text(LICENSE)
     today = dt.date.today().isoformat()
@@ -603,6 +625,7 @@ def main() -> None:
     copy_runtime(source, root)
     print("==> Copiando archivos de sistema de los paquetes")
     count = copy_system_files(root)
+    write_own_system_files(root)
     print(f"    {count} archivos")
     # omarchy-nvim only exists in Omarchy's repo; keep its LazyVim config.
     nvim_config = Path("/usr/share/omarchy-nvim/config")
