@@ -30,6 +30,10 @@ readonly EXTERNAL_SHELL_PLUGIN_URL=https://github.com/SirJul1337/omarchy-lock-ex
 readonly DROPPED_DESKTOP_FILES=(
   HEY X YouTube Zoom "Google Contacts" "Google Maps" "Google Messages" "Google Photos"
 )
+# Command launchers in ~/.local/bin for the tools in apps/.config/mise/config.toml
+# ("PACKAGE" or "PACKAGE COMMAND"). Your .zshrc drops mise's shims from PATH, so
+# these are what make `claude` and the rest work; each installs on first run.
+readonly MISE_LAUNCHERS=(claude codex copilot gemini gh opencode "npm:@xai-official/grok grok")
 
 DRY_RUN=false
 ASSUME_YES=false
@@ -633,6 +637,12 @@ stage_user() {
     run rm -f -- "$HOME/.local/share/applications/$name.desktop"
   done
   has_group dev || run rm -f -- "$HOME/.local/share/applications/Docker.desktop"
+
+  local launcher
+  for launcher in "${MISE_LAUNCHERS[@]}"; do
+    # shellcheck disable=SC2086  # "PACKAGE COMMAND" splits into two arguments
+    run platform_env wh01s17-mise-install $launcher || note "No se pudo crear el lanzador de ${launcher##* }."
+  done
 
   local plugin_dir="$HOME/.config/wh01s17/plugins/$EXTERNAL_SHELL_PLUGIN_ID"
   if [[ ! -e $plugin_dir ]]; then
