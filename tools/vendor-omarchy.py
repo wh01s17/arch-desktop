@@ -215,6 +215,7 @@ def stub(path: Path, summary: str, body: str) -> None:
     )
 
 
+SYSTEM_VERSION = Path(__file__).resolve().parent.parent / "VERSION"
 DISABLED = 'echo "$(basename "$0"): no disponible en este sistema." >&2\nexit 1'
 
 
@@ -368,17 +369,21 @@ def patch_runtime(root: Path, version: str) -> None:
          "fi\n"
          'echo "El sistema está al día"\n'
          "exit 1")
-    stub(bin_dir / "omarchy-version", "Show the frozen Omarchy version",
+    stub(bin_dir / "omarchy-version", "Show the Omarchy version",
          'cat "${OMARCHY_PATH:-$HOME/.local/share/omarchy}/VERSION"')
+    # No release channels or branches: the system updates from arch-desktop.
+    # Empty output, so fastfetch hides those lines.
     for name in ("omarchy-version-channel", "omarchy-version-branch", "omarchy-channel-current"):
-        stub(bin_dir / name, "Show the release channel (frozen copy)", "echo frozen")
+        stub(bin_dir / name, "No release channels on this system", "exit 0")
     for name in ("omarchy-refresh-pacman", "omarchy-channel-set", "omarchy-upgrade-to-quattro",
                  "omarchy-dev-link", "omarchy-dev-unlink", "omarchy-dev-pkg-test",
                  "omarchy-reinstall", "omarchy-reinstall-pkgs", "omarchy-update-pacman-guard",
                  "omarchy-system-factory-reset"):
-        stub(bin_dir / name, "Disabled in the frozen copy", DISABLED)
+        stub(bin_dir / name, "Not available on this system", DISABLED)
 
-    (root / "VERSION").write_text(f"{version} (copia congelada wh01s17)\n")
+    # The version of your own system (arch-desktop/VERSION), not Omarchy's.
+    (root / "VERSION").write_text(SYSTEM_VERSION.read_text())
+
 
 
 def write_user_units(source: Path, dest_units: Path) -> None:
