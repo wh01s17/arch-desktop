@@ -52,6 +52,7 @@ for path in \
   etc/sysctl.d/99-wh01s17-sysctl.conf \
   etc/systemd/logind.conf.d/10-ignore-power-button.conf \
   etc/systemd/logind.conf.d/20-inhibit-delay.conf \
+  etc/systemd/logind.conf.d/30-ignore-lid-switch.conf \
   etc/systemd/oomd.conf.d/10-wh01s17.conf \
   etc/systemd/resolved.conf.d/10-disable-multicast.conf \
   etc/systemd/system.conf.d/10-faster-shutdown.conf \
