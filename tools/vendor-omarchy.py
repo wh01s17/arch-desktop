@@ -23,6 +23,7 @@ The result is a Stow package:
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import re
 import datetime as dt
 import os
@@ -160,6 +161,15 @@ def replace(path: Path, old: str, new: str, count: int = 1) -> None:
     if found == 0 or (count and found != count):
         fail(f"{path}: expected {count or 'some'} occurrence(s) of {old!r}, found {found}")
     path.write_text(text.replace(old, new))
+
+
+def replace_variant(path: Path, variants: tuple[str, ...], new: str) -> None:
+    """Known 4.0.4/4.0.6 contexts only; do not silently accept upstream drift."""
+    text = path.read_text()
+    found = [old for old in variants if text.count(old) == 1]
+    if len(found) != 1:
+        fail(f"{path}: expected one known upstream variant, found {len(found)}")
+    path.write_text(text.replace(found[0], new, 1))
 
 
 # The lid pauses idle only if it was running, and remembers it in this marker
@@ -330,9 +340,10 @@ def patch_runtime(root: Path, version: str) -> None:
         path.write_text("".join(lines))
 
     # Default apps: Firefox stays the browser and HEY (dropped) gets no mailto.
-    replace(bin_dir / "omarchy-provision-user",
+    replace_variant(bin_dir / "omarchy-provision-user", (
             "env -u BROWSER xdg-settings set default-web-browser chromium.desktop\n",
-            "env -u BROWSER xdg-settings set default-web-browser firefox.desktop\n")
+            "env -u BROWSER XDG_CURRENT_DESKTOP= xdg-settings set default-web-browser chromium.desktop\n",
+        ), "env -u BROWSER XDG_CURRENT_DESKTOP= xdg-settings set default-web-browser firefox.desktop\n")
     replace(bin_dir / "omarchy-provision-user",
             "xdg-mime default HEY.desktop x-scheme-handler/mailto\n", "")
 
@@ -383,6 +394,13 @@ def patch_runtime(root: Path, version: str) -> None:
 
     # The version of your own system (arch-desktop/VERSION), not Omarchy's.
     (root / "VERSION").write_text(SYSTEM_VERSION.read_text())
+
+    # Keep these fixes when regenerating from the frozen 4.0.4 baseline.
+    # The backports also recognise already-fixed 4.0.6 source.
+    spec = importlib.util.spec_from_file_location("backports", Path(__file__).with_name("backport-omarchy.py"))
+    backports = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(backports)
+    backports.write_changes(backports.plan_runtime(root, renamed=False))
 
 
 
@@ -475,6 +493,7 @@ def write_docs(dest: Path, root: Path, versions: dict[str, str]) -> None:
         f"Fecha: {today}\n"
         + "".join(f"{name}: {version}\n" for name, version in versions.items())
         + "Generada con arch-desktop/tools/vendor-omarchy.py.\n"
+        + "Backports revisados: arch-desktop/patches/omarchy-4.0.4-fixes.json\n"
     )
 
 
@@ -597,9 +616,10 @@ def debrand(root: Path, dotfiles: Path) -> None:
             'echo "Uploading debug log to logs.omarchy.org..."\n'
             '    URL=$(curl -sf -F "file=@$LOG_FILE" -Fexpires=24 https://logs.omarchy.org/)',
             'echo "La subida de registros está desactivada."\n    URL=""')
-    replace(bin_dir / f"{NAME}-update-confirm",
+    replace_variant(bin_dir / f"{NAME}-update-confirm", (
             '"What\'s new: https://github.com/basecamp/omarchy/releases/latest"',
-            '"Se actualizarán los paquetes de Arch (pacman, AUR y mise)."')
+            '"What\'s new: https://github.com/omacom/omarchy/releases/latest"',
+        ), '"Se actualizarán los paquetes de Arch (pacman, AUR y mise)."')
     replace(bin_dir / f"{NAME}-update",
             "\\n\\nIf you need assistance, get help from the community at https://omarchy.org/discord", "")
     replace(bin_dir / f"{NAME}-theme-install", '  echo -e "\\e[32mSee https://omarchy.org/themes/\\n\\e[0m"\n', "")
@@ -607,8 +627,10 @@ def debrand(root: Path, dotfiles: Path) -> None:
     replace(bin_dir / f"{NAME}-theme-set-obsidian", "https://omarchy.org", "https://github.com/wh01s17")
     for path in (bin_dir / f"{NAME}-plugin-add", root / "shell/README.md"):
         replace(path, "acme/omarchy-weather", "acme/weather-plugin", count=0)
-    replace(root / "default/hypr/apps/jetbrains.lua",
-            " (see https://github.com/basecamp/omarchy/pull/5183#issuecomment-4189299971)", "")
+    replace_variant(root / "default/hypr/apps/jetbrains.lua", (
+            " (see https://github.com/basecamp/omarchy/pull/5183#issuecomment-4189299971)",
+            " (see https://github.com/omacom/omarchy/pull/5183#issuecomment-4189299971)",
+        ), "")
     unit = root / f"default/systemd/user/{NAME}-speaker-tuning.service"
     unit.write_text("".join(l for l in unit.read_text().splitlines(True) if not l.startswith("Documentation=")))
     menu = root / f"default/{NAME}/{NAME}-menu.jsonc"

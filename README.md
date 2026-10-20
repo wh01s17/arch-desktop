@@ -11,6 +11,7 @@ Todo se llama wh01s17: los comandos son `wh01s17-*`, las variables
 - Instalación paso a paso: [INSTALL.md](INSTALL.md)
 - Historia y decisiones: [PLAN.md](PLAN.md)
 - Atajos: [KEYBINDINGS.md](KEYBINDINGS.md) (generado)
+- Actualizar una instalación existente: [UPDATE.md](UPDATE.md)
 
 ## Cómo encaja
 
@@ -75,6 +76,7 @@ opciones.
 | `decide` | Detecta el hardware y pregunta (o lee `machine.env`) |
 | `packages` | Paquetes oficiales: `base`, `desktop`, `fonts`, `terminal`, grupos y GPU |
 | `aur` | yay y los paquetes del AUR de uno en uno, sin tests ni paquetes `-debug`; Limine/Snapper y BlackArch |
+| `fixes` | Correcciones revisadas del runtime y plugins; retira la configuración insegura de mise de instalaciones anteriores |
 | `stow` | Genera `.arch-build/`; enlaza `platform`, `maintenance`, `desktop`, `terminal` y `apps` (sin plegar), con respaldo de conflictos |
 | `seed` | Configuración por defecto del runtime donde no hay una tuya; Neovim (LazyVim) |
 | `machine` | `machine-profile.lua` de Hyprland y `machine-profile.conf` de Kitty |
@@ -88,7 +90,7 @@ opciones.
 ## Origen y licencia
 
 El runtime es una copia congelada de [Omarchy](https://github.com/basecamp/omarchy)
-4.0.4 (licencia MIT), adaptada a Arch puro y renombrada por
+4.0.4 con correcciones seleccionadas de 4.0.5/4.0.6 (licencia MIT), adaptada a Arch puro y renombrada por
 `tools/vendor-omarchy.py`:
 
 - todos los nombres pasan a wh01s17 (`tools/rename.py`); las URLs se conservan;
@@ -97,6 +99,13 @@ El runtime es una copia congelada de [Omarchy](https://github.com/basecamp/omarc
 - logos y fuente de iconos con la marca wh01s17;
 - `wh01s17 update` actualiza Arch (pacman, AUR, mise) con un snapshot previo;
 - atajos de apps que no usas eliminados (`reference/binds-dropped.tsv`).
+
+La versión propia es **1.0.1**. La base sigue siendo 4.0.4; los parches
+aplicados están identificados en `UPSTREAM` y [patches/README.md](patches/README.md).
+Para recibirlos en otro equipo, actualiza este repo con `git pull --ff-only` y
+aplica las etapas indicadas en [UPDATE.md](UPDATE.md).
+La etapa `fixes` los conserva al instalar, y el generador los vuelve a aplicar
+al regenerar. Actualizar paquetes con `wh01s17 update` no actualiza este código.
 
 El aviso de copyright de la licencia MIT se conserva en
 `~/.local/share/wh01s17/LICENSE` y `UPSTREAM`, como exige la licencia.

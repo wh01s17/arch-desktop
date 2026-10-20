@@ -1,5 +1,13 @@
 # Plan de implementación: escritorio wh01s17 en Arch puro
 
+> **Mantenimiento 2026-10-19, versión propia 1.0.1:** se conservó la base
+> 4.0.4 y se portaron correcciones de seguridad, bloqueo, monitores, idle y
+> reinicio del shell desde 4.0.5/4.0.6. Ver [UPDATE.md](UPDATE.md).
+> Este documento conserva el diseño y estados históricos; sus afirmaciones
+> sobre nombres originales, `desktop-arch`, bloqueo al cerrar la tapa y pasos
+> pendientes no describen necesariamente el código actual. README e INSTALL
+> describen la implementación vigente.
+
 > **Nota:** este plan se escribió cuando el instalador vivía en `post-install-linux/arch/`.
 > Ahora es este repositorio (`arch-desktop`): donde dice `arch/…`, lee la raíz del repo.
 > Desde entonces el runtime se renombró por completo a **wh01s17** (comandos `wh01s17-*`,

@@ -23,7 +23,7 @@ readonly STOW_PACKAGES=("$DOTFILES_DIR:platform" "$DOTFILES_DIR:maintenance" "$A
 readonly STOW_NO_FOLDING_PACKAGES=("$DOTFILES_DIR:apps")
 readonly SOURCE_PACKAGES=(platform maintenance apps desktop terminal)
 readonly OPTIONAL_GROUPS=(dev apps gaming virtualization pentest)
-readonly ALL_STAGES=(preflight bootstrap dotfiles decide packages aur stow seed machine system user hibernate shell services validate)
+readonly ALL_STAGES=(preflight bootstrap dotfiles decide packages aur fixes stow seed machine system user hibernate shell services validate)
 readonly EXTERNAL_SHELL_PLUGIN_ID=io.github.sirjul1337.lock-explorer
 readonly EXTERNAL_SHELL_PLUGIN_URL=https://github.com/SirJul1337/omarchy-lock-explorer.git
 # Web apps the runtime installs that you do not use (PLAN.md, D7).
@@ -517,6 +517,14 @@ backup_stow_conflicts() {
     run mkdir -p "$BACKUP_DIR/$(dirname "$relative")"
     run mv -- "$target" "$BACKUP_DIR/$relative"
   done
+}
+
+stage_fixes() {
+  log 'Correcciones del runtime y retirada del PATH inseguro de mise'
+  [[ $DRY_RUN == true && ! -d $DOTFILES_DIR ]] && return
+  run python3 -I "$script_dir/tools/backport-omarchy.py" \
+    --runtime "$DOTFILES_DIR/platform/.local/share/wh01s17" --dotfiles "$DOTFILES_DIR"
+  run bash "$script_dir/patches/mise-work-cleanup.sh"
 }
 
 stage_stow() {

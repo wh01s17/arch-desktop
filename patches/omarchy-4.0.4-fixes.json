@@ -1,0 +1,278 @@
+{
+  "source": "https://github.com/omacom/omarchy/compare/v4.0.4...v4.0.6",
+  "base": "c668141e9c42b13c80c9ca4ea108e11708c5e8a5",
+  "head": "237f1b4071a0bff2296c6d740ba2b9fd695ebfa0",
+  "license": "MIT, Copyright (c) David Heinemeier Hansson; runtime LICENSE retained",
+  "files": [
+    {
+      "path": "bin/omarchy-cmd-missing",
+      "hunks": [
+        {
+          "old": "# omarchy:summary=Check whether any required commands are missing\n\nfor cmd in \"$@\"; do\n  if ! command -v \"$cmd\" &>/dev/null; then\n    exit 0\n  fi\ndone\n",
+          "new": "# omarchy:summary=Check whether any required commands are missing\n\nfor cmd in \"$@\"; do\n  if ! command -v -- \"$cmd\" &>/dev/null; then\n    exit 0\n  fi\ndone\n"
+        }
+      ]
+    },
+    {
+      "path": "bin/omarchy-cmd-present",
+      "hunks": [
+        {
+          "old": "# omarchy:summary=Check whether all required commands are available\n\nfor cmd in \"$@\"; do\n  command -v \"$cmd\" &>/dev/null || exit 1\ndone\n\nexit 0\n",
+          "new": "# omarchy:summary=Check whether all required commands are available\n\nfor cmd in \"$@\"; do\n  command -v -- \"$cmd\" &>/dev/null || exit 1\ndone\n\nexit 0\n"
+        }
+      ]
+    },
+    {
+      "path": "bin/omarchy-hook-install",
+      "hunks": [
+        {
+          "old": "HOOK_TYPE=$1\nHOOK_FILE=$2\nHOOK_DIR=\"$HOME/.config/omarchy/hooks/$HOOK_TYPE.d\"\nHOOK_NAME=$(basename \"$HOOK_FILE\")\nHOOK_PATH=\"$HOOK_DIR/$HOOK_NAME\"\n\nif [[ ! -f $HOOK_FILE ]]; then\n",
+          "new": "HOOK_TYPE=$1\nHOOK_FILE=$2\nHOOK_DIR=\"$HOME/.config/omarchy/hooks/$HOOK_TYPE.d\"\nHOOK_NAME=$(basename -- \"$HOOK_FILE\")\nHOOK_PATH=\"$HOOK_DIR/$HOOK_NAME\"\n\nif [[ ! -f $HOOK_FILE ]]; then\n"
+        },
+        {
+          "old": "fi\n\nmkdir -p \"$HOOK_DIR\"\ncp \"$HOOK_FILE\" \"$HOOK_PATH\"\nchmod 755 \"$HOOK_PATH\"\n\necho \"Installed $HOOK_TYPE hook: $HOOK_PATH\"\n",
+          "new": "fi\n\nmkdir -p \"$HOOK_DIR\"\ncp -- \"$HOOK_FILE\" \"$HOOK_PATH\"\nchmod 755 \"$HOOK_PATH\"\n\necho \"Installed $HOOK_TYPE hook: $HOOK_PATH\"\n"
+        }
+      ]
+    },
+    {
+      "path": "bin/omarchy-hw-match",
+      "hunks": [
+        {
+          "old": "# omarchy:summary=Match against the computer's DMI product name or product family (case-insensitive).\n# omarchy:args=<pattern>\n\ngrep -qi \"$1\" /sys/class/dmi/id/product_name 2>/dev/null ||\ngrep -qi \"$1\" /sys/class/dmi/id/product_family 2>/dev/null\n",
+          "new": "# omarchy:summary=Match against the computer's DMI product name or product family (case-insensitive).\n# omarchy:args=<pattern>\n\ngrep -qi -- \"$1\" /sys/class/dmi/id/product_name 2>/dev/null ||\ngrep -qi -- \"$1\" /sys/class/dmi/id/product_family 2>/dev/null\n"
+        }
+      ]
+    },
+    {
+      "path": "bin/omarchy-hw-nvidia-display",
+      "hunks": [
+        {
+          "old": "",
+          "new": "#!/bin/bash\n\n# omarchy:summary=Detect whether NVIDIA drives the display (rather than a hybrid iGPU).\n\n# On hybrid laptops the display is usually wired to the integrated GPU while\n# the NVIDIA card only handles offloaded rendering. Forcing NVIDIA's VA-API and\n# GLX drivers globally then breaks Chromium-based browsers (black video with\n# audio still playing), so the Hyprland NVIDIA env only applies when NVIDIA is\n# the display GPU.\n#\n# sysfs exposes which VGA device drives the display via boot_vga. When no\n# device claims it (attribute missing or unreadable), assume NVIDIA is the\n# display GPU to preserve the current behavior on machines we cannot tell.\n#\n# Read the cached sysfs IDs rather than lspci, which reads PCI config space and\n# resumes runtime-suspended GPUs.\npci_devices_path=\"${OMARCHY_PCI_DEVICES_PATH:-/sys/bus/pci/devices}\"\n\nshopt -s nullglob\n\nnvidia_boot=0\nother_boot=0\n\nfor device in \"$pci_devices_path\"/*; do\n  [[ $(< \"$device/class\") == 0x03* ]] || continue\n  boot_vga=0\n  if [[ -f $device/boot_vga ]]; then\n    boot_vga=$(< \"$device/boot_vga\")\n  fi\n  if [[ $(< \"$device/vendor\") == \"0x10de\" ]]; then\n    if (( boot_vga == 1 )); then\n      nvidia_boot=1\n    fi\n  else\n    if (( boot_vga == 1 )); then\n      other_boot=1\n    fi\n  fi\ndone\n\nif (( other_boot == 1 && nvidia_boot == 0 )); then\n  exit 1\nelse\n  exit 0\nfi\n"
+        }
+      ]
+    },
+    {
+      "path": "bin/omarchy-hyprland-session-lock-stranded",
+      "hunks": [
+        {
+          "old": "",
+          "new": "#!/bin/bash\n\n# omarchy:summary=Returns true when the compositor holds a session lock no other locker is alive to own\n# omarchy:args=<own-pid>\n# omarchy:hidden=true\n\n# Hyprland lets any client take over a held lock (misc:allow_session_lock_restore),\n# so a shell that recovers a lock it merely sees can take the live lock screen of\n# another shell, and strand it when it exits. A lock is stranded only while no\n# other Quickshell or hyprlock is running; until then the answer is undetermined,\n# so the caller keeps asking until that locker exits or it gives up.\n#\n# Exits 0 stranded, 1 unlocked, 2 undetermined. The caller passes its own pid,\n# as a crash re-execs the shell in place.\nomarchy-hyprland-session-locked || exit\n\nif pgrep -u \"$UID\" -x 'quickshell|qs|hyprlock' | grep -qvxF \"$1\"; then\n  exit 2\nfi\n"
+        }
+      ]
+    },
+    {
+      "path": "bin/omarchy-launch-editor",
+      "hunks": [
+        {
+          "old": "case \"${editor##*/}\" in\nnvim | vim | nano | micro | hx | helix | fresh)\n  if [[ $inline == \"true\" ]]; then\n    exec \"$editor\" \"$@\"\n  else\n    exec omarchy-launch-tui \"$editor\" \"$@\"\n  fi\n  ;;\n*)\n  exec setsid uwsm-app -- \"$editor\" \"$@\"\n  ;;\nesac\n",
+          "new": "case \"${editor##*/}\" in\nnvim | vim | nano | micro | hx | helix | fresh)\n  if [[ $inline == \"true\" ]]; then\n    exec \"$editor\" -- \"$@\"\n  else\n    exec omarchy-launch-tui \"$editor\" -- \"$@\"\n  fi\n  ;;\n*)\n  exec setsid uwsm-app -- \"$editor\" -- \"$@\"\n  ;;\nesac\n"
+        }
+      ]
+    },
+    {
+      "path": "bin/omarchy-pkg-add",
+      "hunks": [
+        {
+          "old": "\nif omarchy-pkg-missing \"$@\"; then\n  if (( EUID == 0 )); then\n    pacman -S --noconfirm --needed \"$@\" || exit 1\n  else\n    sudo pacman -S --noconfirm --needed \"$@\" || exit 1\n  fi\nfi\n\nfor pkg in \"$@\"; do\n  # Secondary check to handle states where pacman doesn't actually register an error\n  if ! pacman -Q \"$pkg\" &>/dev/null; then\n    echo -e \"\\033[31mError: Package '$pkg' did not install\\033[0m\" >&2\n    exit 1\n  fi\n",
+          "new": "\nif omarchy-pkg-missing \"$@\"; then\n  if (( EUID == 0 )); then\n    pacman -S --noconfirm --needed -- \"$@\" || exit 1\n  else\n    sudo pacman -S --noconfirm --needed -- \"$@\" || exit 1\n  fi\nfi\n\nfor pkg in \"$@\"; do\n  # Secondary check to handle states where pacman doesn't actually register an error\n  if ! pacman -Q -- \"$pkg\" &>/dev/null; then\n    echo -e \"\\033[31mError: Package '$pkg' did not install\\033[0m\" >&2\n    exit 1\n  fi\n"
+        }
+      ]
+    },
+    {
+      "path": "bin/omarchy-pkg-aur-add",
+      "hunks": [
+        {
+          "old": "# omarchy:args=<packages...>\n\nif omarchy-pkg-missing \"$@\"; then\n  yay -S --noconfirm --needed \"$@\" || exit 1\nfi\n\nfor pkg in \"$@\"; do\n  # Secondary check to handle states where pacman doesn't actually register an error\n  if ! pacman -Q \"$pkg\" &>/dev/null; then\n    echo -e \"\\033[31mError: Package '$pkg' did not install\\033[0m\" >&2\n    exit 1\n  fi\n",
+          "new": "# omarchy:args=<packages...>\n\nif omarchy-pkg-missing \"$@\"; then\n  yay -S --noconfirm --needed -- \"$@\" || exit 1\nfi\n\nfor pkg in \"$@\"; do\n  # Secondary check to handle states where pacman doesn't actually register an error\n  if ! pacman -Q -- \"$pkg\" &>/dev/null; then\n    echo -e \"\\033[31mError: Package '$pkg' did not install\\033[0m\" >&2\n    exit 1\n  fi\n"
+        }
+      ]
+    },
+    {
+      "path": "bin/omarchy-pkg-missing",
+      "hunks": [
+        {
+          "old": "# omarchy:args=<packages...>\n\nfor pkg in \"$@\"; do\n  if ! pacman -Q \"$pkg\" &>/dev/null; then\n    exit 0\n  fi\ndone\n",
+          "new": "# omarchy:args=<packages...>\n\nfor pkg in \"$@\"; do\n  if ! pacman -Q -- \"$pkg\" &>/dev/null; then\n    exit 0\n  fi\ndone\n"
+        }
+      ]
+    },
+    {
+      "path": "bin/omarchy-pkg-present",
+      "hunks": [
+        {
+          "old": "# omarchy:args=<packages...>\n\nfor pkg in \"$@\"; do\n  pacman -Q \"$pkg\" &>/dev/null || exit 1\ndone\n\nexit 0\n",
+          "new": "# omarchy:args=<packages...>\n\nfor pkg in \"$@\"; do\n  pacman -Q -- \"$pkg\" &>/dev/null || exit 1\ndone\n\nexit 0\n"
+        }
+      ]
+    },
+    {
+      "path": "bin/omarchy-remove-security-sshd",
+      "hunks": [
+        {
+          "old": "#!/bin/bash\n\n# omarchy:summary=Disable the OpenSSH server, close the firewall port, and optionally remove authorized keys\n# omarchy:requires-sudo=true\n\nset -e\n",
+          "new": "#!/bin/bash\n\n# omarchy:summary=Disable the OpenSSH server, remove standard firewall rules, and optionally remove authorized keys\n# omarchy:requires-sudo=true\n\nset -e\n"
+        },
+        {
+          "old": "sudo systemctl disable --now sshd.service 2>/dev/null || true\n\nif omarchy-cmd-present ufw; then\n  echo \"Closing the SSH port in the firewall...\"\n  sudo ufw --force delete limit 22/tcp >/dev/null 2>&1 || true\n  sudo ufw reload >/dev/null\nfi\n\nif [[ -s $AUTHORIZED_KEYS ]]; then\n",
+          "new": "sudo systemctl disable --now sshd.service 2>/dev/null || true\n\nif omarchy-cmd-present ufw; then\n  echo \"Removing standard SSH firewall rules...\"\n  sudo ufw --force delete limit 22/tcp >/dev/null\n  sudo ufw --force delete allow 22/tcp >/dev/null\n  sudo ufw --force delete allow ssh >/dev/null\n  sudo ufw --force delete limit ssh >/dev/null\n  sudo ufw --force delete allow to any app SSH >/dev/null\n  sudo ufw --force delete limit to any app SSH >/dev/null\n  sudo ufw reload >/dev/null\n  echo \"Standard SSH firewall rules removed. Review custom firewall rules separately.\"\nfi\n\nif [[ -s $AUTHORIZED_KEYS ]]; then\n"
+        },
+        {
+          "old": "  fi\nfi\n\necho -e \"\\e[32m\\nThe SSH server has been disabled and its firewall port closed.\\e[0m\"\necho \"The openssh package remains installed since it also provides the ssh client.\"\n",
+          "new": "  fi\nfi\n\necho -e \"\\e[32m\\nThe SSH server has been disabled.\\e[0m\"\necho \"The openssh package remains installed since it also provides the ssh client.\"\n"
+        }
+      ]
+    },
+    {
+      "path": "bin/omarchy-restart-app",
+      "hunks": [
+        {
+          "old": "# omarchy:summary=Restart an application by killing it and relaunching via uwsm.\n# omarchy:args=<application-name> [application-args...]\n\npkill -x $1\nsetsid uwsm-app -- \"$@\" >/dev/null 2>&1 &\n",
+          "new": "# omarchy:summary=Restart an application by killing it and relaunching via uwsm.\n# omarchy:args=<application-name> [application-args...]\n\npkill -x -- \"$1\"\nsetsid uwsm-app -- \"$@\" >/dev/null 2>&1 &\n"
+        }
+      ]
+    },
+    {
+      "path": "bin/omarchy-restart-shell",
+      "hunks": [
+        {
+          "old": "}\n\n# Each kill stops the oldest matching instance and only returns once it has\n# fully exited, so the no-duplicate launch below can't race a dying shell.\nwhile timeout 5 quickshell kill -p \"$CONFIG_DIR\" --any-display >/dev/null 2>&1; do :; done\n\n# Spawn from Hyprland so the shell inherits the canonical session environment,\n# not transient variables from a terminal, SSH connection, or development tool.\nhyprctl dispatch 'hl.dsp.exec_cmd(\"omarchy-launch-shell\")' >/dev/null\n\nfor (( attempt = 0; attempt < 20; attempt++ )); do\n  if OMARCHY_PATH=\"$session_omarchy_path\" OMARCHY_SHELL_IPC_TIMEOUT=0.5s omarchy-shell shell ping >/dev/null 2>&1; then\n    # The session stays compositor-locked after the old lock client died, so\n    # re-acquire the lock and let the user authenticate out of it.\n",
+          "new": "}\n\n# Each kill stops the oldest matching instance and only returns once it has\n# fully exited. A large bar can take longer than a few seconds to tear down,\n# so the client gets time to see that through, and the wait below covers a\n# client that timed out anyway: the fresh shell refuses to start next to a\n# still-dying instance (-n), which is how a restart used to end with no bar.\nwhile timeout 30 quickshell kill -p \"$CONFIG_DIR\" --any-display >/dev/null 2>&1; do :; done\n\nshell_instance_running() {\n  quickshell list -a -j 2>/dev/null |\n    jq -e --arg dir \"$CONFIG_DIR/\" 'any(.[]; .config_path | startswith($dir))' >/dev/null 2>&1\n}\n\ndeadline=$((SECONDS + 30))\nwhile (( SECONDS < deadline )) && shell_instance_running; do\n  sleep 0.1\ndone\n\n# Spawn from Hyprland so the shell inherits the canonical session environment,\n# not transient variables from a terminal, SSH connection, or development tool.\nhyprctl dispatch 'hl.dsp.exec_cmd(\"omarchy-launch-shell\")' >/dev/null\n\n# The shell answers once its plugins have loaded, which on a large bar is\n# well past ten seconds, so wait on a deadline rather than a fixed handful\n# of attempts.\ndeadline=$((SECONDS + 60))\nwhile (( SECONDS < deadline )); do\n  if OMARCHY_PATH=\"$session_omarchy_path\" OMARCHY_SHELL_IPC_TIMEOUT=0.5s omarchy-shell shell ping >/dev/null 2>&1; then\n    # The session stays compositor-locked after the old lock client died, so\n    # re-acquire the lock and let the user authenticate out of it.\n"
+        }
+      ]
+    },
+    {
+      "path": "default/hypr/nvidia.lua",
+      "hunks": [
+        {
+          "old": "local paths = require(\"default.hypr.paths\")\n\nlocal nvidia = paths.omarchy_path .. \"/bin/omarchy-hw-nvidia\"\nlocal nvidia_gsp = paths.omarchy_path .. \"/bin/omarchy-hw-nvidia-gsp\"\nlocal nvidia_without_gsp = paths.omarchy_path .. \"/bin/omarchy-hw-nvidia-without-gsp\"\n\n-- These detectors read cached sysfs IDs rather than shelling out to lspci.\n-- lspci reads PCI config space, which resumes a runtime-suspended GPU, and on a\n-- hybrid laptop that wake alone outlasts Hyprland's 1.5s config reload budget.\nif o.shell_succeeds(o.shell_quote(nvidia)) then\n  if o.shell_succeeds(o.shell_quote(nvidia_gsp)) then\n    hl.env(\"NVD_BACKEND\", \"direct\")\n    hl.env(\"LIBVA_DRIVER_NAME\", \"nvidia\")\n    hl.env(\"__GLX_VENDOR_LIBRARY_NAME\", \"nvidia\")\n  elseif o.shell_succeeds(o.shell_quote(nvidia_without_gsp)) then\n    hl.env(\"NVD_BACKEND\", \"egl\")\n    hl.env(\"__GLX_VENDOR_LIBRARY_NAME\", \"nvidia\")\n  end\nend\n",
+          "new": "local paths = require(\"default.hypr.paths\")\n\nlocal nvidia = paths.omarchy_path .. \"/bin/omarchy-hw-nvidia\"\nlocal nvidia_display = paths.omarchy_path .. \"/bin/omarchy-hw-nvidia-display\"\nlocal nvidia_gsp = paths.omarchy_path .. \"/bin/omarchy-hw-nvidia-gsp\"\nlocal nvidia_without_gsp = paths.omarchy_path .. \"/bin/omarchy-hw-nvidia-without-gsp\"\n\n-- These detectors read cached sysfs IDs rather than shelling out to lspci.\n-- lspci reads PCI config space, which resumes a runtime-suspended GPU, and on a\n-- hybrid laptop that wake alone outlasts Hyprland's 1.5s config reload budget.\nif o.shell_succeeds(o.shell_quote(nvidia)) then\n  -- On hybrid laptops the display is wired to the iGPU, so forcing NVIDIA's\n  -- VA-API/GLX drivers globally breaks Chromium-based browsers (black video).\n  -- Only apply those when NVIDIA actually drives the display.\n  local nvidia_is_display = o.shell_succeeds(o.shell_quote(nvidia_display))\n  if o.shell_succeeds(o.shell_quote(nvidia_gsp)) then\n    hl.env(\"NVD_BACKEND\", \"direct\")\n    if nvidia_is_display then\n      hl.env(\"LIBVA_DRIVER_NAME\", \"nvidia\")\n      hl.env(\"__GLX_VENDOR_LIBRARY_NAME\", \"nvidia\")\n    end\n  elseif o.shell_succeeds(o.shell_quote(nvidia_without_gsp)) then\n    hl.env(\"NVD_BACKEND\", \"egl\")\n    if nvidia_is_display then\n      hl.env(\"__GLX_VENDOR_LIBRARY_NAME\", \"nvidia\")\n    end\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "path": "install/user/mise-work.sh",
+      "hunks": [
+        {
+          "old": "mkdir -p \"$HOME/Work\"\nmkdir -p \"$HOME/Work/tries\"\n\ncat >\"$HOME/Work/.mise.toml\" <<'EOF'\n[env]\n_.path = \"{{ cwd }}/bin\"\nEOF\n\nmise trust ~/Work/.mise.toml\n\n# Offline installs unpack the Node tarball bundled by the ISO: from\n# /opt/packages in the ISO chroot, or from the copy staged in provisioning state when\n# omarchy-provision-owner finalizes the user at first boot.\n",
+          "new": "mkdir -p \"$HOME/Work\"\nmkdir -p \"$HOME/Work/tries\"\n\n# Offline installs unpack the Node tarball bundled by the ISO: from\n# /opt/packages in the ISO chroot, or from the copy staged in provisioning state when\n# omarchy-provision-owner finalizes the user at first boot.\n"
+        }
+      ]
+    },
+    {
+      "path": "shell/plugins/lock/Service.qml",
+      "hunks": [
+        {
+          "old": "import Quickshell.Services.Pam\nimport Quickshell.Wayland\nimport qs.Commons\n\nItem {\n  id: root\n",
+          "new": "import Quickshell.Services.Pam\nimport Quickshell.Wayland\nimport qs.Commons\nimport qs.Commons as Commons\n\nItem {\n  id: root\n"
+        },
+        {
+          "old": "  property bool strandedLockResolved: false\n\n  readonly property bool locked: lockRequested || sessionLock.locked || sessionLock.secure\n  readonly property bool authenticating: authenticatingPassword || fingerprintAuthenticating\n\n  function realScreenCount() {\n",
+          "new": "  property bool strandedLockResolved: false\n\n  readonly property bool locked: lockRequested || sessionLock.locked || sessionLock.secure\n\n  // Decisions read the lock state afresh. A property binding that missed a change\n  // notification once reported locked after an unlock, and a lock request before\n  // suspend then took that for done and never locked the session.\n  function currentlyLocked() {\n    return lockRequested || sessionLock.locked || sessionLock.secure\n  }\n  readonly property bool authenticating: authenticatingPassword || fingerprintAuthenticating\n\n  function realScreenCount() {\n"
+        },
+        {
+          "old": "  }\n\n  // ext-session-lock outlives its client, and a restart carries no lock over, so\n  // a session locked this early is an orphan behind Hyprland's failsafe. Outputs\n  // are often still absent here, so ask until the answer means something.\n  function checkStrandedLock() {\n    if (strandedLockResolved || strandedLockCheckProc.running) return\n\n    // A lock this shell took is nobody's orphan.\n    if (locked || lockRequested) {\n      strandedLockResolved = true\n      return\n    }\n",
+          "new": "  }\n\n  // ext-session-lock outlives its client, and a restart carries no lock over, so\n  // a session locked this early may be an orphan behind Hyprland's failsafe. It\n  // may also be another shell's live lock, which Hyprland would let this one\n  // take over and then strand on exit, so the helper answers undetermined while\n  // another locker runs. Outputs are often still absent here, so ask until the\n  // answer means something.\n  function checkStrandedLock() {\n    if (strandedLockResolved || strandedLockCheckProc.running) return\n\n    // A lock this shell took is nobody's orphan.\n    if (currentlyLocked()) {\n      strandedLockResolved = true\n      return\n    }\n"
+        },
+        {
+          "old": "  }\n\n  function recoverStrandedLock() {\n    if (!strandedLock || locked || !passwordPamConfigured) return\n\n    strandedLock = false\n    logEvent(\"lock-stranded: recovering\")\n",
+          "new": "  }\n\n  function recoverStrandedLock() {\n    if (!strandedLock || currentlyLocked() || !passwordPamConfigured) return\n\n    strandedLock = false\n    logEvent(\"lock-stranded: recovering\")\n"
+        },
+        {
+          "old": "  }\n\n  function finishUnlock() {\n    if (!root.locked && !lockRequested) return\n\n    lockRequested = false\n    pendingSessionLock = false\n",
+          "new": "  }\n\n  function finishUnlock() {\n    if (!root.currentlyLocked()) return\n\n    lockRequested = false\n    pendingSessionLock = false\n"
+        },
+        {
+          "old": "\n    WlSessionLockSurface {\n      id: lockSurface\n      color: Color.background\n\n      LockView {\n        id: lockView\n",
+          "new": "\n    WlSessionLockSurface {\n      id: lockSurface\n      color: Commons.Color.background\n\n      LockView {\n        id: lockView\n"
+        },
+        {
+          "old": "\n  Process {\n    id: strandedLockCheckProc\n    command: [\"bash\", \"-c\", \"omarchy-hyprland-session-locked\"]\n    onExited: function(exitCode) {\n      // No output to read the lock off yet.\n      if (exitCode === 2) return\n\n      root.strandedLockResolved = true\n\n      // A lock taken while this was in flight is this shell's own.\n      root.strandedLock = exitCode === 0 && !root.locked && !root.lockRequested\n      root.recoverStrandedLock()\n    }\n  }\n",
+          "new": "\n  Process {\n    id: strandedLockCheckProc\n    // $PPID is this shell: a crash re-execs in place, so its pid is the one to skip.\n    command: [\"bash\", \"-c\", \"omarchy-hyprland-session-lock-stranded \\\"$PPID\\\"\"]\n    onExited: function(exitCode) {\n      // No output to read the lock off yet.\n      if (exitCode === 2) return\n\n      root.strandedLockResolved = true\n\n      // A lock taken while this was in flight is this shell's own.\n      root.strandedLock = exitCode === 0 && !root.currentlyLocked()\n      root.recoverStrandedLock()\n    }\n  }\n"
+        },
+        {
+          "old": "\n    function lock(): string {\n      if (!root.passwordPamConfigured) return \"missing-pam\"\n      if (!root.locked && !root.beginLock()) return \"failed\"\n      return \"ok\"\n    }\n\n    function isLocked(): string {\n      return root.locked ? \"true\" : \"false\"\n    }\n\n    function status(): string {\n      return JSON.stringify({\n        locked: root.locked,\n        requested: root.lockRequested,\n        pending: root.pendingSessionLock,\n        sessionLocked: sessionLock.locked,\n",
+          "new": "\n    function lock(): string {\n      if (!root.passwordPamConfigured) return \"missing-pam\"\n      if (!root.currentlyLocked() && !root.beginLock()) return \"failed\"\n      return \"ok\"\n    }\n\n    function isLocked(): string {\n      return root.currentlyLocked() ? \"true\" : \"false\"\n    }\n\n    function status(): string {\n      return JSON.stringify({\n        locked: root.currentlyLocked(),\n        requested: root.lockRequested,\n        pending: root.pendingSessionLock,\n        sessionLocked: sessionLock.locked,\n"
+        }
+      ]
+    },
+    {
+      "path": "shell/plugins/panels/clock/Model.js",
+      "hunks": [
+        {
+          "old": "// Always six rows of seven days. A fixed grid keeps the popup exactly the\n// same height in every month, so stepping through the year never makes the\n// panel jump under the pointer.\nfunction monthGrid(year, month, weekStart, todayKey) {\n  var start = normalizedWeekStart(weekStart, 1)\n  var leading = (new Date(year, month, 1).getDay() - start + 7) % 7\n  var cursor = new Date(year, month, 1 - leading)\n  var today = String(todayKey || \"\")\n  var weeks = []\n\n  for (var w = 0; w < 6; w++) {\n    var days = []\n    var thursday = null\n    for (var d = 0; d < 7; d++) {\n      var cellYear = cursor.getFullYear()\n      var cellMonth = cursor.getMonth()\n      var cellDay = cursor.getDate()\n      var weekday = cursor.getDay()\n      var key = dateKey(cellYear, cellMonth, cellDay)\n      if (weekday === 4) thursday = { year: cellYear, month: cellMonth, day: cellDay }\n      days.push({\n",
+          "new": "// Always six rows of seven days. A fixed grid keeps the popup exactly the\n// same height in every month, so stepping through the year never makes the\n// panel jump under the pointer.\n//\n// Walked in UTC, where every day is 24 hours long. A local-midnight cursor has\n// to be resolved by the engine in zones that start DST at 00:00 -- Chile every\n// September, Cuba every March -- and V4 resolves the missing midnight backward\n// onto the previous day while V8 resolves it forward, so the local walk repeats\n// a date in the shell and not under the tests. A grid of civil dates never\n// needed a wall clock in the first place.\nfunction monthGrid(year, month, weekStart, todayKey) {\n  var start = normalizedWeekStart(weekStart, 1)\n  var leading = (new Date(Date.UTC(year, month, 1)).getUTCDay() - start + 7) % 7\n  var cursor = new Date(Date.UTC(year, month, 1 - leading))\n  var today = String(todayKey || \"\")\n  var weeks = []\n\n  for (var w = 0; w < 6; w++) {\n    var days = []\n    var thursday = null\n    for (var d = 0; d < 7; d++) {\n      var cellYear = cursor.getUTCFullYear()\n      var cellMonth = cursor.getUTCMonth()\n      var cellDay = cursor.getUTCDate()\n      var weekday = cursor.getUTCDay()\n      var key = dateKey(cellYear, cellMonth, cellDay)\n      if (weekday === 4) thursday = { year: cellYear, month: cellMonth, day: cellDay }\n      days.push({\n"
+        },
+        {
+          "old": "        weekend: weekday === 0 || weekday === 6,\n        today: key === today\n      })\n      cursor.setDate(cursor.getDate() + 1)\n    }\n    // Number every row by the ISO week owning its Thursday. That is the\n    // definition itself for Monday-start weeks, and the only answer that\n",
+          "new": "        weekend: weekday === 0 || weekday === 6,\n        today: key === today\n      })\n      cursor.setUTCDate(cursor.getUTCDate() + 1)\n    }\n    // Number every row by the ISO week owning its Thursday. That is the\n    // definition itself for Monday-start weeks, and the only answer that\n"
+        },
+        {
+          "old": "  return weeks\n}\n\nfunction stepMonth(year, month, delta) {\n  var target = new Date(year, Number(month) + Number(delta), 1)\n  return { year: target.getFullYear(), month: target.getMonth() }\n}\n\nif (typeof module !== \"undefined\") {\n",
+          "new": "  return weeks\n}\n\n// UTC for the same reason as the grid: the month is read back off the date, so\n// a first of the month that has no local midnight would step into the wrong one.\nfunction stepMonth(year, month, delta) {\n  var target = new Date(Date.UTC(year, Number(month) + Number(delta), 1))\n  return { year: target.getUTCFullYear(), month: target.getUTCMonth() }\n}\n\nif (typeof module !== \"undefined\") {\n"
+        }
+      ]
+    },
+    {
+      "path": "shell/plugins/panels/monitor/Panel.qml",
+      "hunks": [
+        {
+          "old": "import Quickshell.Io\nimport qs.Ui\nimport qs.Commons\nimport \"Model.js\" as Model\n\nPanel {\n",
+          "new": "import Quickshell.Io\nimport qs.Ui\nimport qs.Commons\nimport qs.Commons as Commons\nimport \"Model.js\" as Model\n\nPanel {\n"
+        },
+        {
+          "old": "    if (!name) return\n    if (enabled && root.enabledDisplayCount <= 1) return\n\n    actionProc.command = [\"hyprctl\", \"keyword\", \"monitor\", name + (enabled ? \",disable\" : \",preferred,auto,auto\")]\n    if (!actionProc.running) actionProc.running = true\n  }\n\n",
+          "new": "    if (!name) return\n    if (enabled && root.enabledDisplayCount <= 1) return\n\n    // hyprctl keyword is rejected under the Lua config (\"non-legacy parsers\"),\n    // so drive the monitor through the hl.monitor eval API instead.\n    var output = '\"' + name.replace(/[\\\\\"]/g, \"\\\\$&\") + '\"'\n    var expr = enabled\n      ? 'hl.monitor({ output = ' + output + ', disabled = true })'\n      : 'hl.monitor({ output = ' + output + ', disabled = false, mode = \"preferred\", position = \"auto\", scale = \"auto\" })'\n    actionProc.command = [\"hyprctl\", \"eval\", expr]\n    if (!actionProc.running) actionProc.running = true\n  }\n\n"
+        },
+        {
+          "old": "    onHasCursorChanged: if (hasCursor) root.ensureCursorVisible(monitorRow)\n    current: isFocused\n    foreground: root.bar.foreground\n    fill: Style.hoverFillFor(root.bar.foreground, Color.accent)\n    currentFill: Style.selectedFillFor(root.bar.foreground, Color.accent)\n    implicitHeight: monitorInner.implicitHeight + Style.spacing.xl\n    opacity: canToggle ? 1.0 : 0.45\n\n",
+          "new": "    onHasCursorChanged: if (hasCursor) root.ensureCursorVisible(monitorRow)\n    current: isFocused\n    foreground: root.bar.foreground\n    fill: Style.hoverFillFor(root.bar.foreground, Commons.Color.accent)\n    currentFill: Style.selectedFillFor(root.bar.foreground, Commons.Color.accent)\n    implicitHeight: monitorInner.implicitHeight + Style.spacing.xl\n    opacity: canToggle ? 1.0 : 0.45\n\n"
+        }
+      ]
+    },
+    {
+      "path": "shell/plugins/services/idle/IdleModel.js",
+      "hunks": [
+        {
+          "old": "  return Math.floor(n)\n}\n\nfunction eventParts(event, count) {\n  try {\n    if (event && event.parse) return event.parse(count)\n",
+          "new": "  return Math.floor(n)\n}\n\n// 0 means the action is disabled, not \"fire immediately\". min(0, 300) would\n// otherwise make IdleMonitor report idle as soon as an inhibitor is released.\nfunction firstIdleTimeout(screensaverSeconds, lockSeconds) {\n  var times = []\n  if (screensaverSeconds > 0) times.push(screensaverSeconds)\n  if (lockSeconds > 0) times.push(lockSeconds)\n  if (times.length === 0) return 0\n  var min = times[0]\n  for (var i = 1; i < times.length; i++) {\n    if (times[i] < min) min = times[i]\n  }\n  return min\n}\n\nfunction delayAfterFirstIdle(timeoutSeconds, firstIdleSeconds) {\n  if (!(timeoutSeconds > 0)) return 0\n  var delay = timeoutSeconds - firstIdleSeconds\n  return delay > 0 ? delay : 0\n}\n\nfunction eventParts(event, count) {\n  try {\n    if (event && event.parse) return event.parse(count)\n"
+        },
+        {
+          "old": "if (typeof module !== \"undefined\") {\n  module.exports = {\n    secondsFromConfig: secondsFromConfig,\n    eventParts: eventParts,\n    screensaverWindowsAfter: screensaverWindowsAfter\n  }\n",
+          "new": "if (typeof module !== \"undefined\") {\n  module.exports = {\n    secondsFromConfig: secondsFromConfig,\n    firstIdleTimeout: firstIdleTimeout,\n    delayAfterFirstIdle: delayAfterFirstIdle,\n    eventParts: eventParts,\n    screensaverWindowsAfter: screensaverWindowsAfter\n  }\n"
+        }
+      ]
+    },
+    {
+      "path": "shell/plugins/services/idle/Service.qml",
+      "hunks": [
+        {
+          "old": "    ? shell.shellConfig.idle : (shell && shell.idleConfig ? shell.idleConfig : ({}))\n  readonly property int screensaverTimeoutSeconds: secondsFromConfig(idleConfig.screensaver, defaultScreensaverSeconds)\n  readonly property int lockTimeoutSeconds: secondsFromConfig(idleConfig.lock, defaultLockSeconds)\n  readonly property int firstIdleTimeoutSeconds: Math.min(screensaverTimeoutSeconds, lockTimeoutSeconds)\n  readonly property int screensaverDelaySeconds: Math.max(0, screensaverTimeoutSeconds - firstIdleTimeoutSeconds)\n  readonly property int lockDelaySeconds: Math.max(0, lockTimeoutSeconds - firstIdleTimeoutSeconds)\n  readonly property bool idleEnabled: stayAwakeStateLoaded && !stayAwake\n  readonly property string screensaverClass: \"org.omarchy.screensaver\"\n\n",
+          "new": "    ? shell.shellConfig.idle : (shell && shell.idleConfig ? shell.idleConfig : ({}))\n  readonly property int screensaverTimeoutSeconds: secondsFromConfig(idleConfig.screensaver, defaultScreensaverSeconds)\n  readonly property int lockTimeoutSeconds: secondsFromConfig(idleConfig.lock, defaultLockSeconds)\n  readonly property bool screensaverEnabled: screensaverTimeoutSeconds > 0\n  readonly property bool lockEnabled: lockTimeoutSeconds > 0\n  readonly property bool idleTimersEnabled: screensaverEnabled || lockEnabled\n  readonly property int firstIdleTimeoutSeconds: IdleModel.firstIdleTimeout(screensaverTimeoutSeconds, lockTimeoutSeconds)\n  readonly property int screensaverDelaySeconds: IdleModel.delayAfterFirstIdle(screensaverTimeoutSeconds, firstIdleTimeoutSeconds)\n  readonly property int lockDelaySeconds: IdleModel.delayAfterFirstIdle(lockTimeoutSeconds, firstIdleTimeoutSeconds)\n  readonly property bool idleEnabled: stayAwakeStateLoaded && !stayAwake\n  readonly property string screensaverClass: \"org.omarchy.screensaver\"\n\n"
+        },
+        {
+          "old": "    root.screensaverStartedThisCycle = false\n    resetScreensaverWindows()\n\n    if (root.screensaverDelaySeconds === 0) launchScreensaver()\n    else screensaverTimer.restart()\n\n    if (root.lockDelaySeconds === 0) lockSystem(\"lock-timeout-immediate\")\n    else lockTimer.restart()\n  }\n\n  function cancelIdleCycle(reason) {\n",
+          "new": "    root.screensaverStartedThisCycle = false\n    resetScreensaverWindows()\n\n    // Set this cycle's deadlines once: a bound interval would restart a pending\n    // timer from the moment shell.json changes, locking early or late.\n    if (root.screensaverEnabled) {\n      if (root.screensaverDelaySeconds === 0) launchScreensaver()\n      else {\n        screensaverTimer.interval = root.screensaverDelaySeconds * 1000\n        screensaverTimer.restart()\n      }\n    }\n\n    if (root.lockEnabled) {\n      if (root.lockDelaySeconds === 0) lockSystem(\"lock-timeout-immediate\")\n      else {\n        lockTimer.interval = root.lockDelaySeconds * 1000\n        lockTimer.restart()\n      }\n    }\n  }\n\n  function cancelIdleCycle(reason) {\n"
+        },
+        {
+          "old": "\n  function handleIdleChanged() {\n    logEvent(\"idle-monitor\", idleMonitor.isIdle ? \"idle\" : \"active\")\n    if (!root.idleEnabled) return\n\n    if (idleMonitor.isIdle) startIdleCycle()\n    else handleActiveSignal()\n",
+          "new": "\n  function handleIdleChanged() {\n    logEvent(\"idle-monitor\", idleMonitor.isIdle ? \"idle\" : \"active\")\n    if (!root.idleEnabled || !root.idleTimersEnabled) return\n\n    if (idleMonitor.isIdle) startIdleCycle()\n    else handleActiveSignal()\n"
+        },
+        {
+          "old": "    return applyStayAwake(!value, true, \"ipc\")\n  }\n\n  IdleMonitor {\n    id: idleMonitor\n    enabled: root.idleEnabled\n    timeout: root.firstIdleTimeoutSeconds\n    respectInhibitors: true\n    onIsIdleChanged: root.handleIdleChanged()\n  }\n\n  Timer {\n    id: screensaverTimer\n    interval: root.screensaverDelaySeconds * 1000\n    repeat: false\n    onTriggered: root.launchScreensaver()\n  }\n\n  Timer {\n    id: lockTimer\n    interval: root.lockDelaySeconds * 1000\n    repeat: false\n    onTriggered: if (root.idleEnabled && root.idledThisCycle) root.lockSystem(\"lock-timeout\")\n  }\n\n  Timer {\n",
+          "new": "    return applyStayAwake(!value, true, \"ipc\")\n  }\n\n  // With both timeouts at 0 the monitor stops reporting, so nothing else would end a running cycle.\n  onIdleTimersEnabledChanged: if (!idleTimersEnabled) cancelIdleCycle(\"idle-timers-disabled\")\n\n  IdleMonitor {\n    id: idleMonitor\n    enabled: root.idleEnabled && root.idleTimersEnabled\n    timeout: Math.max(1, root.firstIdleTimeoutSeconds)\n    respectInhibitors: true\n    onIsIdleChanged: root.handleIdleChanged()\n  }\n\n  Timer {\n    id: screensaverTimer\n    repeat: false\n    onTriggered: if (root.screensaverEnabled) root.launchScreensaver()\n  }\n\n  Timer {\n    id: lockTimer\n    repeat: false\n    onTriggered: if (root.idleEnabled && root.idledThisCycle && root.lockEnabled) root.lockSystem(\"lock-timeout\")\n  }\n\n  Timer {\n"
+        }
+      ]
+    },
+    {
+      "path": "shell/shell.qml",
+      "hunks": [
+        {
+          "old": "    if (!manifest) return null\n    if (manifest.__isFirstParty) return manifest\n    var copy = JSON.parse(JSON.stringify(manifest))\n    delete copy.__sourceDir\n    delete copy.__isFirstParty\n    delete copy.__hostCapabilities\n    return copy\n",
+          "new": "    if (!manifest) return null\n    if (manifest.__isFirstParty) return manifest\n    var copy = JSON.parse(JSON.stringify(manifest))\n    // Keep __sourceDir: third-party plugins find their bundled scripts through it.\n    // Only the host trust markers are withheld.\n    delete copy.__isFirstParty\n    delete copy.__hostCapabilities\n    return copy\n"
+        }
+      ]
+    }
+  ]
+}

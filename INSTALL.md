@@ -188,5 +188,7 @@ Chrome, VS Code y Obsidian, y arrancar un snapshot y Windows desde Limine.
 ./install.sh --groups "dev apps" --gpu nvidia --yes   # sin preguntas
 ```
 
-Etapas: `preflight bootstrap dotfiles decide packages aur stow seed machine
+Etapas: `preflight bootstrap dotfiles decide packages aur fixes stow seed machine
 system user hibernate shell services validate`.
+
+Para actualizar una instalación que ya estás probando, sigue [UPDATE.md](UPDATE.md).
