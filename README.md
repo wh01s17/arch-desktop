@@ -2,7 +2,7 @@
 
 Instala en Arch Linux el escritorio **wh01s17**: Hyprland en Lua, su shell
 (barra, menú, paneles, notificaciones, bloqueo) con tus plugins `wh01s17.*`,
-el tema `wh01s17`, Kitty, Zsh con Oh My Posh, tus atajos y tus aplicaciones.
+el tema `wh01s17`, Kitty, Zsh con Starship, tus atajos y tus aplicaciones.
 
 Todo se llama wh01s17: los comandos son `wh01s17-*`, las variables
 `WH01S17_*`, la configuración vive en `~/.config/wh01s17`, la sesión se llama
@@ -85,7 +85,7 @@ opciones.
 | `hibernate` | `wh01s17-hibernation-setup` |
 | `shell` | Oh My Zsh, plugins, NVM y `chsh` a Zsh |
 | `services` | Timers de `maintenance` |
-| `validate` | `Hyprland --verify-config`, `zsh -n`, Oh My Posh, tema y `~/dotfiles/test.sh` |
+| `validate` | `Hyprland --verify-config`, `zsh -n`, Starship, tema y `~/dotfiles/test.sh` |
 
 ## Origen y licencia
 

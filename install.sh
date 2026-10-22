@@ -743,15 +743,20 @@ stage_services() {
 stage_validate() {
   log 'Validación'
   if [[ $DRY_RUN == true ]]; then
-    info '[dry-run] Hyprland --verify-config, zsh -n ~/.zshrc, oh-my-posh y ~/dotfiles/test.sh'
+    info '[dry-run] Hyprland --verify-config, zsh -n ~/.zshrc, starship y ~/dotfiles/test.sh'
     return
   fi
   local errors=0
   platform_env Hyprland --verify-config --config "$HOME/.config/hypr/hyprland.lua" | tail -n 3 ||
     errors=$((errors + 1))
   zsh -n "$HOME/.zshrc" || errors=$((errors + 1))
-  oh-my-posh print primary --config "$HOME/.config/oh-my-posh/active.omp.json" --shell zsh --plain >/dev/null ||
+  # Starship exits 0 even when it cannot parse its config; only stderr tells.
+  local starship_errors
+  starship_errors=$(starship prompt 2>&1 >/dev/null) || errors=$((errors + 1))
+  if [[ $starship_errors == *'Unable to parse the config file'* ]]; then
+    warn 'Starship no pudo leer ~/.config/starship.toml.'
     errors=$((errors + 1))
+  fi
   [[ -s $HOME/.local/state/wh01s17/current/theme.name ]] || { warn 'No hay tema aplicado.'; errors=$((errors + 1)); }
   if [[ -x $DOTFILES_DIR/test.sh ]]; then
     # Same environment as the session, where uwsm sets WH01S17_PATH.
