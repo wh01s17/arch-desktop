@@ -25,6 +25,9 @@ detect_hardware() {
   detect_displays
 
   DETECT_ROOT_FS=$(findmnt -no FSTYPE / 2>/dev/null || echo desconocido)
+  # "/" is btrfs's top-level subvolume; INSTALL.md mounts / from "/@".
+  DETECT_ROOT_SUBVOL=
+  [[ $DETECT_ROOT_FS == btrfs ]] && DETECT_ROOT_SUBVOL=$(findmnt -no FSROOT / 2>/dev/null)
   if [[ -f /boot/limine.conf || -d /boot/EFI/limine ]] || pacman -Q limine >/dev/null 2>&1; then
     DETECT_BOOTLOADER=limine
   elif bootctl is-installed >/dev/null 2>&1; then
@@ -118,6 +121,6 @@ print_detection() {
   else
     info 'Pantallas: ninguna detectada desde /sys'
   fi
-  info "Raíz: $DETECT_ROOT_FS · arranque: $DETECT_BOOTLOADER · receptor Logitech: $DETECT_LOGITECH"
+  info "Raíz: $DETECT_ROOT_FS${DETECT_ROOT_SUBVOL:+ ($DETECT_ROOT_SUBVOL)} · arranque: $DETECT_BOOTLOADER · receptor Logitech: $DETECT_LOGITECH"
   info "Perfil conocido para este modelo: ${DETECT_PROFILE:-ninguno}"
 }

@@ -63,3 +63,20 @@ activar/desactivar una pantalla desde tu panel de monitores.
 
 Esta actualización corrige el código de desactivar SSH, pero no desactiva el
 servicio ni modifica automáticamente las reglas del firewall actuales.
+
+## Equipos instalados con el esquema de disco anterior
+
+Las instalaciones hechas antes de que `INSTALL.md` creara los subvolúmenes `@`
+tienen la raíz en el nivel superior del btrfs: los snapshots incluyen `/home`
+y «Restaurar» de Limine no funciona. `install.sh` y `tools/check-system.sh`
+lo avisan. El equipo sigue funcionando y puede arrancar un snapshot; para
+corregir el esquema hay que reinstalar siguiendo `INSTALL.md` §2.
+
+No cambies `RESTORE_METHOD` a `rsync` en ese esquema: `/home` no es un
+subvolumen aparte, y restaurar podría devolverlo al estado del snapshot.
+
+Mientras tanto, limita la caché de pacman, que también queda en los snapshots:
+
+```bash
+sudo systemctl enable --now paccache.timer
+```

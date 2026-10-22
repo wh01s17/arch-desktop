@@ -196,6 +196,9 @@ suggest_font_size() {
 stage_decide() {
   detect_hardware
   print_detection
+  if [[ $DETECT_ROOT_SUBVOL == / ]]; then
+    note 'La raíz es el nivel superior del btrfs: los snapshots incluyen /home y «Restaurar» de Limine no funciona. Reinstala con los subvolúmenes de INSTALL.md §2.'
+  fi
 
   if [[ $RECONFIGURE != true ]] && load_machine_env; then
     log "Respuestas guardadas en $MACHINE_ENV (usa --reconfigure para cambiarlas)"
@@ -661,6 +664,14 @@ stage_user() {
 
   configure_vscode_keyring
 
+  # VM images rewrite in place; without copy-on-write btrfs does not fragment
+  # them. Only an empty folder takes the attribute, so do it before any VM.
+  local vm_dir="$HOME/VirtualBox VMs"
+  if has_group virtualization && [[ $DETECT_ROOT_FS == btrfs && ! -e $vm_dir ]]; then
+    { run mkdir -p "$vm_dir" && run chattr +C "$vm_dir"; } ||
+      note "No se pudo crear $vm_dir sin copy-on-write."
+  fi
+
   local launcher
   for launcher in "${MISE_LAUNCHERS[@]}"; do
     # shellcheck disable=SC2086  # "PACKAGE COMMAND" splits into two arguments
@@ -755,6 +766,11 @@ stage_validate() {
   starship_errors=$(starship prompt 2>&1 >/dev/null) || errors=$((errors + 1))
   if [[ $starship_errors == *'Unable to parse the config file'* ]]; then
     warn 'Starship no pudo leer ~/.config/starship.toml.'
+    errors=$((errors + 1))
+  fi
+  # A replace restore gives @ a new ID; an fstab that mounts by ID stops booting.
+  if [[ $DETECT_ROOT_FS == btrfs ]] && grep -qE '^[^#]*[[:space:]]btrfs[[:space:]].*subvolid=' /etc/fstab; then
+    warn '/etc/fstab monta btrfs con subvolid=: quítalo y deja sólo subvol= (INSTALL.md §2).'
     errors=$((errors + 1))
   fi
   [[ -s $HOME/.local/state/wh01s17/current/theme.name ]] || { warn 'No hay tema aplicado.'; errors=$((errors + 1)); }

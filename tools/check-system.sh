@@ -35,6 +35,19 @@ if configs=$(sudo -n snapper --no-headers list-configs 2>/dev/null | awk '{print
 else
   info "snapper: sin permisos para leerlo"
 fi
+if [[ $(findmnt -no FSTYPE /) == btrfs ]]; then
+  root_subvol=$(findmnt -no FSROOT /)
+  if [[ $root_subvol == / ]]; then
+    bad "raíz en el nivel superior del btrfs: snapshots con /home y sin restauración (INSTALL.md §2)"
+  else
+    ok "raíz en el subvolumen $root_subvol"
+  fi
+  if grep -qE '^[^#]*[[:space:]]btrfs[[:space:]].*subvolid=' /etc/fstab; then
+    bad "fstab monta btrfs con subvolid= (rompe la restauración)"
+  fi
+  info "btrfs: $(findmnt -no OPTIONS / | grep -o 'compress=[^,]*' || echo 'sin compresión')"
+fi
+check "paccache.timer activo" systemctl is-enabled paccache.timer
 info "zram: $(zramctl --noheadings -o NAME,DISKSIZE,ALGORITHM 2>/dev/null | paste -sd' ')"
 if [[ -f /swap/swapfile ]] || swapon --show=NAME --noheadings | grep -qv zram; then
   ok "swap para hibernar: $(swapon --show=NAME,SIZE --noheadings | grep -v zram | paste -sd' ')"

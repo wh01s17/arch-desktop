@@ -73,19 +73,19 @@ opciones.
 | `preflight` | Arch, usuario normal, red, sudo; se niega a ejecutarse sobre Omarchy |
 | `bootstrap` | git, stow, base-devel |
 | `dotfiles` | Clona o actualiza `~/dotfiles` |
-| `decide` | Detecta el hardware y pregunta (o lee `machine.env`) |
+| `decide` | Detecta el hardware y pregunta (o lee `machine.env`); avisa si la raíz btrfs no usa los subvolúmenes de `INSTALL.md` |
 | `packages` | Paquetes oficiales: `base`, `desktop`, `fonts`, `terminal`, grupos y GPU |
 | `aur` | yay y los paquetes del AUR de uno en uno, sin tests ni paquetes `-debug`; Limine/Snapper y BlackArch |
 | `fixes` | Correcciones revisadas del runtime y plugins; retira la configuración insegura de mise de instalaciones anteriores |
 | `stow` | Genera `.arch-build/`; enlaza `platform`, `maintenance`, `desktop`, `terminal` y `apps` (sin plegar), con respaldo de conflictos |
 | `seed` | Configuración por defecto del runtime donde no hay una tuya; Neovim (LazyVim) |
 | `machine` | `machine-profile.lua` de Hyprland y `machine-profile.conf` de Kitty |
-| `system` | `lib/system-setup.sh` como root: archivos y pasos de sistema, firewall, hardware, SDDM con autologin, servicios, initramfs y Limine |
-| `user` | `wh01s17-provision-user`: tema, llavero, git, mise, directorios XDG; Firefox como navegador; plugin lock-explorer |
+| `system` | `lib/system-setup.sh` como root: archivos y pasos de sistema, firewall, hardware, SDDM con autologin, servicios (incluido `paccache.timer`), initramfs y Limine |
+| `user` | `wh01s17-provision-user`: tema, llavero, git, mise, directorios XDG; Firefox como navegador; plugin lock-explorer; `~/VirtualBox VMs` sin copy-on-write |
 | `hibernate` | `wh01s17-hibernation-setup` |
 | `shell` | Oh My Zsh, plugins, NVM y `chsh` a Zsh |
 | `services` | Timers de `maintenance` |
-| `validate` | `Hyprland --verify-config`, `zsh -n`, Starship, tema y `~/dotfiles/test.sh` |
+| `validate` | `Hyprland --verify-config`, `zsh -n`, Starship, `fstab` sin `subvolid=`, tema y `~/dotfiles/test.sh` |
 
 ## Origen y licencia
 

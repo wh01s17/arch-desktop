@@ -185,6 +185,10 @@ fi
 if installed snapper; then
   systemctl enable snapper-cleanup.timer || failed+=('systemctl enable snapper-cleanup.timer')
 fi
+# Without it the pacman cache only grows (it reached 19 GiB on the Omarchy machine).
+if installed pacman-contrib; then
+  systemctl enable paccache.timer || failed+=('systemctl enable paccache.timer')
+fi
 
 step 'initramfs y arranque'
 # These hooks unlock LUKS with `encrypt` (cryptdevice=), like archinstall with a
