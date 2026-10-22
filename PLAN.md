@@ -15,7 +15,8 @@
 > de upstream que añade `--` en `launch-editor` queda excluido, porque rompe
 > el `+línea` que otros programas pasan a `$EDITOR`
 > ([patches/README.md](patches/README.md)). La sonda temporal del menú se
-> eliminó de `~/dotfiles`.
+> eliminó de `~/dotfiles`. `INSTALL.md` crea el btrfs con subvolúmenes `@`
+> en lugar de copiar el esquema de Omarchy.
 
 > **Nota:** este plan se escribió cuando el instalador vivía en `post-install-linux/arch/`.
 > Ahora es este repositorio (`arch-desktop`): donde dice `arch/…`, lee la raíz del repo.
@@ -59,7 +60,7 @@ riesgo:
 
 | Fase | Estado |
 | --- | --- |
-| 0. Referencia | Completa en `arch/reference/`, incluidos btrfs y Limine. Mostró que la raíz es el nivel superior del btrfs, sin subvolúmenes `@`; `INSTALL.md` replica ese esquema |
+| 0. Referencia | Completa en `arch/reference/`, incluidos btrfs y Limine. Mostró que la raíz es el nivel superior del btrfs, sin subvolúmenes `@`. `INSTALL.md` ya no lo replica: usa `@`, `@home`, `@log`, `@pkg`, `@docker` y `@swap`, para que los snapshots sólo cubran el sistema y la restauración de `limine-snapper-sync` funcione |
 | 1. Prueba del fork | Hecha: tu escritorio arranca sobre la copia en una sesión anidada, con barra, plugins, tema, menú y los atajos esperados |
 | 2–3. Stow y Hyprland | Hechas con las desviaciones anteriores |
 | 4. Shell y comandos | Copia completa, adaptada por `vendor-omarchy.py` (rutas, update, pacman.conf, provisión, atajos descartados) |

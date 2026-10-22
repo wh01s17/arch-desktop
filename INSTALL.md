@@ -2,8 +2,9 @@
 
 Pasos para pasar de un disco con Windows (o vacío) a tu escritorio actual
 sobre Arch puro. El instalador (`install.sh`) hace casi todo; esta guía
-cubre lo que va antes: el sistema base con btrfs y Limine, igual que en tu
-Omarchy.
+cubre lo que va antes: el sistema base con btrfs y Limine. A diferencia de
+tu Omarchy, el btrfs usa subvolúmenes `@` para que los snapshots sólo cubran el
+sistema y la restauración desde Limine funcione.
 
 ## Índice
 
@@ -26,7 +27,8 @@ git -C ~/dotfiles push
 ```
 
 Respalda fuera del equipo: `~/.ssh`, `~/.gnupg`, perfiles de navegador,
-bóvedas de Obsidian, `~/workspace` y cualquier `.env` o licencia.
+bóvedas de Obsidian, `~/workspace`, `~/VirtualBox VMs` y cualquier `.env` o
+licencia.
 
 Para el arranque dual con Windows, sigue `omarchy/dual-boot.md` (repo privado post-install-linux) §1–3
 (preparar Windows, la USB y el firmware): no cambia en Arch.
@@ -54,19 +56,52 @@ mkfs.btrfs -L arch /dev/nvme0n1p4       # la nueva; NO formatees la ESP de Windo
 
 Sin Windows: crea una ESP de 1 GB (`mkfs.fat -F32`) y el resto btrfs.
 
-### btrfs (el mismo esquema que tu Omarchy)
+### btrfs con subvolúmenes `@`
 
 Tu Omarchy usa el **nivel superior** del btrfs como raíz (`subvolid=5`), sin
-subvolúmenes `@`. Sólo hay dos subvolúmenes, y ambos los crea el instalador:
-`/.snapshots` (Snapper) y `/swap` (hibernación). Ver
-`reference/btrfs.txt`.
+subvolúmenes `@` (ver `reference/btrfs.txt`). Ese esquema tiene dos problemas:
+
+- Cada snapshot congela el disco completo, incluidos `/home`, las VMs, Docker y
+  las cachés, así que borrar archivos no libera espacio mientras existan
+  snapshots que los contengan.
+- `limine-snapper-sync` restaura con `RESTORE_METHOD=replace`, que no puede
+  restaurar un sistema sin subvolumen raíz: los snapshots arrancan, pero
+  «Restaurar» no funciona.
+
+Este esquema separa lo que no es sistema. Es el que `limine-snapper-sync`
+espera por defecto (`/@` y `/@/.snapshots`):
+
+| Subvolumen | Se monta en | Por qué |
+| --- | --- | --- |
+| `@` | `/` | Lo único que cubren los snapshots |
+| `@home` | `/home` | Home, VMs, Steam y `~/.cache` fuera de los snapshots |
+| `@log` | `/var/log` | Los logs sobreviven a una restauración |
+| `@pkg` | `/var/cache/pacman/pkg` | La caché de pacman fuera de los snapshots |
+| `@docker` | `/var/lib/docker` | Las imágenes de Docker fuera de los snapshots |
+| `@swap` | `/swap` | Swapfile de hibernación, sin copy-on-write |
+
+`/.snapshots` no se crea aquí: el instalador ejecuta `snapper create-config /`,
+que lo crea dentro de `@`.
 
 ```bash
-opts=relatime,ssd,discard=async,space_cache=v2   # las opciones de tu fstab actual
-mount -o $opts /dev/nvme0n1p4 /mnt
-mkdir -p /mnt/boot
+mount /dev/nvme0n1p4 /mnt
+for sv in @ @home @log @pkg @docker @swap; do btrfs subvolume create "/mnt/$sv"; done
+chattr +C /mnt/@swap
+umount /mnt
+
+opts=relatime,ssd,discard=async,space_cache=v2,compress=zstd:1
+mount -o "$opts,subvol=@" /dev/nvme0n1p4 /mnt
+mkdir -p /mnt/{home,var/log,var/cache/pacman/pkg,var/lib/docker,swap,boot}
+mount -o "$opts,subvol=@home"   /dev/nvme0n1p4 /mnt/home
+mount -o "$opts,subvol=@log"    /dev/nvme0n1p4 /mnt/var/log
+mount -o "$opts,subvol=@pkg"    /dev/nvme0n1p4 /mnt/var/cache/pacman/pkg
+mount -o "$opts,subvol=@docker" /dev/nvme0n1p4 /mnt/var/lib/docker
+mount -o "$opts,subvol=@swap"   /dev/nvme0n1p4 /mnt/swap
 mount /dev/nvme0n1p1 /mnt/boot          # la ESP (Omarchy la monta en /boot)
 ```
+
+`compress=zstd:1` sólo comprime lo que se escribe a partir de ahora; el
+swapfile y los archivos con `chattr +C` no se comprimen.
 
 Tu fstab actual también monta Windows en `/mnt/windows` (`ntfs3`, con
 `x-systemd.automount` y `nofail`). Si lo quieres igual, añade esa línea a
@@ -78,8 +113,13 @@ Tu fstab actual también monta Windows en `/mnt/windows` (`ntfs3`, con
 pacstrap -K /mnt base linux linux-firmware btrfs-progs limine efibootmgr \
   networkmanager sudo git zsh neovim intel-ucode   # amd-ucode en CPU AMD
 genfstab -U /mnt >> /mnt/etc/fstab
+# Restaurar con «replace» cambia el ID de @: monta por nombre, no por ID.
+sed -i 's/subvolid=[0-9]*,//' /mnt/etc/fstab
 arch-chroot /mnt
 ```
+
+Revisa `/mnt/etc/fstab`: debe tener una línea por subvolumen, todas con
+`subvol=` y ninguna con `subvolid=`.
 
 Dentro del chroot:
 
@@ -112,7 +152,7 @@ efibootmgr --create --disk /dev/nvme0n1 --part 1 \
 root_uuid=$(blkid -s PARTUUID -o value /dev/nvme0n1p4)
 cat > /etc/default/limine <<EOF
 ESP_PATH="/boot"
-KERNEL_CMDLINE[default]+="root=PARTUUID=$root_uuid zswap.enabled=0 rw rootfstype=btrfs"
+KERNEL_CMDLINE[default]+="root=PARTUUID=$root_uuid rootflags=subvol=@ zswap.enabled=0 rw rootfstype=btrfs"
 EOF
 
 cat > /boot/limine.conf <<EOF
@@ -121,7 +161,7 @@ timeout: 3
 /Arch Linux
     protocol: linux
     path: boot():/vmlinuz-linux
-    cmdline: root=PARTUUID=$root_uuid zswap.enabled=0 rw rootfstype=btrfs
+    cmdline: root=PARTUUID=$root_uuid rootflags=subvol=@ zswap.enabled=0 rw rootfstype=btrfs
     module_path: boot():/initramfs-linux.img
 EOF
 exit
@@ -158,6 +198,13 @@ Las respuestas quedan en `~/.config/wh01s17/machine.env`. Al terminar,
 reinicia: SDDM abre la sesión «wh01s17 (Hyprland uwsm)» y el primer inicio
 completa los servicios de usuario, el tema GTK y los avisos.
 
+Antes de traer las VMs del respaldo, crea su carpeta vacía sin
+copy-on-write; los archivos que copies ahí heredan el atributo:
+
+```bash
+mkdir -p ~/"VirtualBox VMs" && chattr +C ~/"VirtualBox VMs"
+```
+
 En un equipo con perfil `auto`, coloca las pantallas en el panel Monitor de
 la barra: la escala, la resolución y la disposición se guardan solas. Para
 convertirlo en un perfil con nombre, copia `profiles/hp-gray.lua` como base,
@@ -173,11 +220,16 @@ systemctl --failed; systemctl --user --failed
 nvidia-smi                           # con GPU NVIDIA
 cat /sys/module/nvidia_drm/parameters/modeset   # Y
 snapper list                         # snapshots de pacman (snap-pac)
+sudo btrfs subvolume list /          # @, @home, @log, @pkg, @docker, @swap y @/.snapshots
+findmnt -t btrfs -o TARGET,OPTIONS   # / con subvol=/@ y compress=zstd:1
+lsattr -d ~/"VirtualBox VMs"         # con la C de no copy-on-write
 ```
 
 Prueba también: suspender y reanudar, hibernar, cerrar la tapa, conectar y
 desconectar monitores, compartir pantalla en Chrome, la ñ y las tildes en
 Chrome, VS Code y Obsidian, y arrancar un snapshot y Windows desde Limine.
+Prueba también una restauración real: arranca un snapshot, pulsa «Restaurar»
+y comprueba que el sistema vuelve a ese estado y que `/home` sigue intacto.
 
 ## 5. Volver a ejecutar o cambiar decisiones
 
