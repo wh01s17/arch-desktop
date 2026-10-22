@@ -63,15 +63,6 @@
       ]
     },
     {
-      "path": "bin/omarchy-launch-editor",
-      "hunks": [
-        {
-          "old": "case \"${editor##*/}\" in\nnvim | vim | nano | micro | hx | helix | fresh)\n  if [[ $inline == \"true\" ]]; then\n    exec \"$editor\" \"$@\"\n  else\n    exec omarchy-launch-tui \"$editor\" \"$@\"\n  fi\n  ;;\n*)\n  exec setsid uwsm-app -- \"$editor\" \"$@\"\n  ;;\nesac\n",
-          "new": "case \"${editor##*/}\" in\nnvim | vim | nano | micro | hx | helix | fresh)\n  if [[ $inline == \"true\" ]]; then\n    exec \"$editor\" -- \"$@\"\n  else\n    exec omarchy-launch-tui \"$editor\" -- \"$@\"\n  fi\n  ;;\n*)\n  exec setsid uwsm-app -- \"$editor\" -- \"$@\"\n  ;;\nesac\n"
-        }
-      ]
-    },
-    {
       "path": "bin/omarchy-pkg-add",
       "hunks": [
         {

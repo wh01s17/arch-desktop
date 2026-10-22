@@ -7,7 +7,7 @@ wh01s17. No instala Omarchy 4.0.6 ni sus repositorios, kernel o migraciones.
 [diff oficial 4.0.4 → 4.0.6](https://github.com/omacom/omarchy/compare/v4.0.4...v4.0.6),
 con los commits de origen y licencia MIT. Se seleccionaron:
 
-- separación de opciones y argumentos en comandos, paquetes, hooks y editor;
+- separación de opciones y argumentos en comandos, paquetes y hooks;
 - comprobación del estado real del bloqueo y recuperación sin tomar el de otro proceso;
 - temporizadores de inactividad: cero desactiva la acción;
 - espera de salida y arranque al reiniciar el shell;
@@ -17,6 +17,10 @@ con los commits de origen y licencia MIT. Se seleccionaron:
 - eliminación completa de las variantes estándar de reglas UFW al desactivar SSH;
 - conservación de `__sourceDir` para los scripts de plugins externos;
 - provisión sin la entrada automática `{{ cwd }}/bin` de mise.
+
+No se aplica el `--` de upstream en `launch-editor`: ese script es `$EDITOR`,
+y con `--` el editor toma como archivo el `+línea` que pasan `less`,
+lazygit o yazi (`nvim -- +3 f.txt` abre `+3` y `f.txt`).
 
 Se conservaron la solución propia de colores Qt 6.12, el tema, los plugins,
 los atajos, las aplicaciones y la política de tapa. El parche de colores de
