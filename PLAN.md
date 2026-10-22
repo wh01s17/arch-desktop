@@ -8,6 +8,15 @@
 > pendientes no describen necesariamente el código actual. README e INSTALL
 > describen la implementación vigente.
 
+> **Actualización 2026-10-22:** el prompt es **Starship**
+> (`terminal/.config/starship.toml`); Oh My Posh, su selector de temas y
+> `oh-my-posh-bin` se retiraron de `~/dotfiles` y del instalador, y
+> `validate` comprueba que Starship pueda leer su configuración. El backport
+> de upstream que añade `--` en `launch-editor` queda excluido, porque rompe
+> el `+línea` que otros programas pasan a `$EDITOR`
+> ([patches/README.md](patches/README.md)). La sonda temporal del menú se
+> eliminó de `~/dotfiles`.
+
 > **Nota:** este plan se escribió cuando el instalador vivía en `post-install-linux/arch/`.
 > Ahora es este repositorio (`arch-desktop`): donde dice `arch/…`, lee la raíz del repo.
 > Desde entonces el runtime se renombró por completo a **wh01s17** (comandos `wh01s17-*`,
@@ -86,7 +95,8 @@ temporal), y declara casi todas las combinaciones de teclas. Sin embargo:
 
 1. **Choca con Stow.** Copia archivos y se detiene si encuentra enlaces de
    Stow (`install.sh:81-109`). Además, duplica `.zshrc`, `kitty.conf` y
-   Oh My Posh en versiones reducidas que divergen de `~/dotfiles`.
+   Oh My Posh en versiones reducidas que divergen de `~/dotfiles`. (Hoy el
+   prompt es Starship y vive en `terminal/`.)
 2. **Sustituye tu shell en lugar de portarlo.** La barra de 174 líneas
    reemplaza unas 15 000 líneas de QML/JS propio repartidas en 9 plugins.
    Ese código depende de `qs.Commons`/`qs.Ui` de Omarchy Shell y de unos
@@ -141,7 +151,8 @@ del rumbo de Omarchy, porque congelas la versión que te gusta.
    Pierdes Oh My Zsh y sus plugins, aliases, zoxide, NVM y los hooks de Git
    y CTF. Con `kitty.conf` pasa lo mismo: 17 líneas frente a 49.
 3. `~/.config/oh-my-posh` se copia con `cp -a` (`install.sh:177-182`), así
-   que lo que edites allí ya no vuelve al repositorio.
+   que lo que edites allí ya no vuelve al repositorio. Ya no aplica: Oh My
+   Posh se retiró y `~/.config/starship.toml` es un enlace de Stow.
 4. Monitores:
    - `monitors-hp-gray.lua` fuerza el espejo del proyector, mientras que los
      dotfiles usan `auto-right` y el selector de layout del panel Display.
@@ -235,7 +246,7 @@ del rumbo de Omarchy, porque congelas la versión que te gusta.
     | `yay` | AUR (`yay` o `yay-bin`); se arranca con `makepkg` |
     | `walker`, `elephant`, `cliamp` | AUR |
     | `wayscriber`, `voxtype` | AUR (también en variante `-bin`) |
-    | `oh-my-posh` | AUR `oh-my-posh-bin` (en lugar de `curl \| bash`) |
+    | `oh-my-posh` | Ya no se instala: Starship (extra) lo reemplaza |
     | `visual-studio-code-bin`, `1password`, `google-chrome`, `spotify`, `typora`, `localsend-bin` | AUR |
     | `mise-bin` | `mise` en extra |
     | `hyprland-preview-share-picker` | Sólo `hyprland-preview-share-picker-git` en AUR, con 2 votos |
@@ -245,10 +256,11 @@ del rumbo de Omarchy, porque congelas la versión que te gusta.
 20. Configuración fuera de `~/dotfiles` que perderías al reinstalar: `nvim`
     (LazyVim de `omarchy-nvim`), `btop`, `tmux`, `git`, `gh`, `lazygit`,
     `mise`, `mpv`, `imv`, `fontconfig`, `gtk-3.0`/`gtk-4.0`, `mimeapps.list`,
-    `environment.d`, `uwsm`, `fcitx5`, `solaar`, `starship.toml`, `Code`,
-    entre otras.
-21. Hay cambios sin commit en `~/dotfiles`: `desktop/.config/hypr/bindings.lua`
-    (la sonda del menú) y `desktop/.config/hypr/scripts/`.
+    `environment.d`, `uwsm`, `fcitx5`, `solaar`, `Code`, entre otras.
+    `starship.toml` ya está versionado en `terminal/.config/`.
+21. Resuelto: la sonda del menú (`bindings.lua` y
+    `desktop/.config/hypr/scripts/`) se eliminó de `~/dotfiles` y el resto
+    de los cambios pendientes se publicó.
 
 ### 1.3 Acoplamiento de `~/dotfiles` a Omarchy
 
@@ -430,7 +442,7 @@ confirmación. El diseño completo está en la
 
 ```text
 ~/dotfiles/
-├── terminal/        compartido: Zsh, Kitty y Oh My Posh (3 ajustes, Fase 2)
+├── terminal/        compartido: Zsh, Kitty y Starship (3 ajustes, Fase 2)
 ├── maintenance/     compartido, sin cambios
 ├── system/          compartido, sin cambios (balance de btrfs)
 ├── desktop/         sólo Omarchy; congelado hasta la Fase 8
@@ -526,9 +538,9 @@ XL (el bloque principal).
 Esta fase sólo puede hacerse mientras Omarchy siga instalado. Si la omites,
 no tendrás con qué comparar la paridad.
 
-1. Cierra los cambios pendientes en `~/dotfiles` (la sonda del menú en
-   `bindings.lua` y `scripts/`): haz commit o descártalos, y haz push.
-   Publica también los temas de Oh My Posh que hayas descargado localmente.
+1. Cierra los cambios pendientes en `~/dotfiles`: haz commit o
+   descártalos, y haz push. Hecho: la sonda del menú se descartó y Oh My
+   Posh, con sus temas, se retiró en favor de Starship.
 2. Crea `arch/tools/capture-reference.sh`, que escriba en `arch/reference/`:
    - `binds.json` ← `hyprctl binds -j`: los 237 atajos efectivos con su
      descripción. Es la lista que hay que reproducir.
@@ -609,12 +621,10 @@ funcionando igual.
    - **Zsh.** Mueve `ctf-aliases.zsh` y `git-branch-hook.zsh` a
      `terminal/.config/zsh/` y cárgalos desde ahí. Antes, revisa si
      `ctf-ip.sh` y `git-branch.sh` usan esas rutas.
-   - **Oh My Posh.** Haz que `compose-theme.py` y `theme-picker.zsh` lean
-     la paleta de `~/.config/kitty/theme.conf` por defecto, que resuelve en
-     las dos plataformas. Conserva `--omarchy` como alias de un nombre
-     neutro, como `--theme-colors`.
+   - **Prompt.** Starship reemplaza a Oh My Posh y usa los colores ANSI de
+     Kitty, así que no necesita adaptarse a cada plataforma.
    - Comprueba con `stow -n -v -R terminal`, `zsh -n ~/.zshrc`,
-     `omp-theme --current` y abriendo Kitty con la misma paleta.
+     `starship explain` y abriendo Kitty con la misma paleta.
 3. Mueve el tema a `platform/.local/share/wh01s17/themes/wh01s17`. En
    `desktop/.config/omarchy/themes/` deja un **enlace simbólico relativo**
    hacia esa ruta y comprueba con `omarchy theme set wh01s17`. Si prefieres
@@ -854,7 +864,7 @@ falta.
    | `apps.txt` | `obsidian`, `obs-studio`, `kdenlive`, `libreoffice-fresh`, `qbittorrent`, `strawberry`, `xournalpp`, `pinta`, `solaar` |
    | `gaming.txt` | `steam` (multilib) |
    | `virtualization.txt` | `virtualbox`, `virtualbox-host-dkms` |
-   | `aur.txt` | `visual-studio-code-bin`, `google-chrome`, `typora`, `spotify`, `localsend-bin`, `herdr-bin`, `cliamp`, `wayscriber-bin`, `voxtype-bin`, `tensaku`, `aether`, `try-cli`, `oh-my-posh-bin`, `limine-mkinitcpio-hook`, `limine-snapper-sync` |
+   | `aur.txt` | `visual-studio-code-bin`, `google-chrome`, `typora`, `spotify`, `localsend-bin`, `herdr-bin`, `cliamp`, `wayscriber-bin`, `voxtype-bin`, `tensaku`, `aether`, `try-cli`, `limine-mkinitcpio-hook`, `limine-snapper-sync` |
    | `gpu-*.txt` | Uno por familia de GPU (paso 3); el instalador elige cuál |
    | `pentest.txt` | Las herramientas de BlackArch que usas hoy |
 
@@ -883,7 +893,7 @@ falta.
    stow        platform desktop-arch terminal maintenance (respaldo de conflictos)
    machine     perfil elegido o creado; machine-profile.lua y .conf locales
    theme       enlaces de ~/.local/state/wh01s17/current y kitty/theme.conf
-   shell       Oh My Zsh y plugins, NVM, oh-my-posh-bin, chsh -s zsh
+   shell       Oh My Zsh y plugins, NVM, chsh -s zsh
    services    sistema y usuario (paso 5)
    pentest     BlackArch opcional (reutilizar la función con verificación SHA-1)
    validate    ~/dotfiles/test.sh y Hyprland --verify-config
@@ -1050,7 +1060,7 @@ brillo se ocultan en equipos sin batería ni retroiluminación.
 | Red | Wi-Fi, DNS y diagnóstico | Panel Network |
 | Capturas | Región, grabación con audio, OCR y selector de color | Impr Pant, Alt+Impr Pant, Super+Ctrl+Impr Pant |
 | Portapapeles y emojis | Historial (Super+Ctrl+V), copiar y pegar con Super+C/V en Kitty y fuera | Manual |
-| Terminal | Paleta, Meslo, opacidad 0.85, prompt, `omp-theme` y zoxide/NVM | Abrir Kitty |
+| Terminal | Paleta, Meslo, opacidad 0.85, prompt de Starship y zoxide/NVM | Abrir Kitty |
 | Llavero | Chrome y VS Code recuerdan sesiones | Reiniciar sesión |
 | Snapshots | `snap-pac` pre/post, arranque de un snapshot desde Limine | `pacman -S` de prueba y reinicio |
 | Dual boot | Entrada de Windows en Limine | Reinicio |
