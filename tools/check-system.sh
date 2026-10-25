@@ -56,6 +56,15 @@ if [[ $(findmnt -no FSTYPE /) == btrfs ]]; then
     bad "fstab monta btrfs con subvolid= (rompe la restauración)"
   fi
   info "btrfs: $(findmnt -no OPTIONS / | grep -o 'compress=[^,]*' || echo 'sin compresión')"
+  usage=$(sudo -n btrfs filesystem usage / 2>/dev/null |
+    awk '/Free \(estimated\)/ {f = $3} /Device unallocated/ {u = $3} END {if (u) print "libre " f " · sin asignar " u}')
+  info "btrfs: ${usage:-espacio sin permisos para leerlo}"
+  check "balance semanal (btrfs-balance-auto.timer)" systemctl is-enabled btrfs-balance-auto.timer
+  check "aviso de espacio (btrfs-space-check.timer)" systemctl --user is-enabled btrfs-space-check.timer
+  check "reclamo dinámico de chunks de datos" grep -qx 1 "/sys/fs/btrfs/$(findmnt -no UUID /)/allocation/data/dynamic_reclaim"
+  if [[ $root_subvol != / ]] && pacman -Q docker >/dev/null 2>&1; then
+    check "/var/lib/containerd en su propio subvolumen (UPDATE.md)" mountpoint -q /var/lib/containerd
+  fi
 fi
 check "paccache.timer activo" systemctl is-enabled paccache.timer
 info "zram: $(zramctl --noheadings -o NAME,DISKSIZE,ALGORITHM 2>/dev/null | paste -sd' ')"

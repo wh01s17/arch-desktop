@@ -302,6 +302,8 @@ capture_btrfs() {
     sudo btrfs subvolume list / 2>/dev/null || echo 'no disponible'
     section 'Montajes btrfs'
     findmnt -t btrfs -o TARGET,SOURCE,OPTIONS
+    section 'Uso'
+    sudo btrfs filesystem usage -T / 2>/dev/null || echo 'no disponible'
     section '/etc/fstab'
     grep -vE '^\s*(#|$)' /etc/fstab
     section 'Swap'
