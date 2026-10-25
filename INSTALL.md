@@ -27,13 +27,25 @@ git -C ~/dotfiles push
 ```
 
 Respalda fuera del equipo: `~/.ssh`, `~/.gnupg`, perfiles de navegador,
-bóvedas de Obsidian, `~/workspace`, `~/VirtualBox VMs` y cualquier `.env` o
+bóvedas de Obsidian, `~/workspace` y cualquier `.env` o
 licencia.
 
 Para el arranque dual con Windows, sigue `omarchy/dual-boot.md` (repo privado post-install-linux) §1–3
 (preparar Windows, la USB y el firmware): no cambia en Arch.
 
 ## 2. Sistema base desde el ISO de Arch
+
+`tools/iso-install.sh` hace todo este apartado: pregunta las particiones, el
+equipo, el usuario y las contraseñas, y pide escribir `BORRAR` antes de
+formatear. Desde el ISO, con red:
+
+```bash
+iwctl station wlan0 connect "MiRed"
+curl -LO https://raw.githubusercontent.com/wh01s17/arch-desktop/main/tools/iso-install.sh
+bash iso-install.sh
+```
+
+Lo que sigue son los mismos pasos a mano.
 
 Arranca el ISO oficial de Arch Linux. Los nombres de disco son ejemplos;
 compruébalos con `lsblk`.
@@ -74,7 +86,7 @@ espera por defecto (`/@` y `/@/.snapshots`):
 | Subvolumen | Se monta en | Por qué |
 | --- | --- | --- |
 | `@` | `/` | Lo único que cubren los snapshots |
-| `@home` | `/home` | Home, VMs, Steam y `~/.cache` fuera de los snapshots |
+| `@home` | `/home` | Home, Steam y `~/.cache` fuera de los snapshots |
 | `@log` | `/var/log` | Los logs sobreviven a una restauración |
 | `@pkg` | `/var/cache/pacman/pkg` | La caché de pacman fuera de los snapshots |
 | `@docker` | `/var/lib/docker` | Contenedores y volúmenes de Docker fuera de los snapshots |
@@ -191,7 +203,7 @@ El instalador detecta el equipo y pregunta:
 | Perfil de monitores y fuente | El del modelo en `profiles/machines.tsv` (`omen`), o `auto` en un equipo nuevo |
 | Tamaño de fuente de Kitty | Sólo con `auto`: 11, o 12 si hay una pantalla 4K |
 | Driver de GPU | Detectado: `nvidia-legacy` (GTX 10xx), `nvidia`, `amd`, `intel`, `vm` o `none` |
-| Grupos opcionales | `dev`, `apps`, `gaming`, `virtualization` sí; `pentest` no |
+| Grupos opcionales | `dev`, `apps`, `gaming` sí; `virtualization` y `pentest` no |
 | Hibernación | Sí en portátiles con btrfs y Limine |
 | Autologin | Sí, como hoy |
 | Nombre y correo de git | Los de `git config` si existen |
@@ -199,13 +211,6 @@ El instalador detecta el equipo y pregunta:
 Las respuestas quedan en `~/.config/wh01s17/machine.env`. Al terminar,
 reinicia: SDDM abre la sesión «wh01s17 (Hyprland uwsm)» y el primer inicio
 completa los servicios de usuario, el tema GTK y los avisos.
-
-Antes de traer las VMs del respaldo, crea su carpeta vacía sin
-copy-on-write; los archivos que copies ahí heredan el atributo:
-
-```bash
-mkdir -p ~/"VirtualBox VMs" && chattr +C ~/"VirtualBox VMs"
-```
 
 En un equipo con perfil `auto`, coloca las pantallas en el panel Monitor de
 la barra: la escala, la resolución y la disposición se guardan solas. Para
@@ -224,7 +229,6 @@ cat /sys/module/nvidia_drm/parameters/modeset   # Y
 snapper list                         # snapshots de pacman (snap-pac)
 sudo btrfs subvolume list /          # @, @home, @log, @pkg, @docker, @containerd, @swap y @/.snapshots
 findmnt -t btrfs -o TARGET,OPTIONS   # / con subvol=/@ y compress=zstd:1
-lsattr -d ~/"VirtualBox VMs"         # con la C de no copy-on-write
 ```
 
 Prueba también: suspender y reanudar, hibernar, cerrar la tapa, conectar y
