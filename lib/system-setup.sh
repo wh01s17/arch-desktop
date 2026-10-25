@@ -156,7 +156,7 @@ step 'Servicios'
 services=(
   NetworkManager.service bluetooth.service cups.service avahi-daemon.service
   power-profiles-daemon.service sddm.service systemd-resolved.service
-  systemd-oomd.service linux-modules-cleanup.service
+  systemd-oomd.service systemd-timesyncd.service linux-modules-cleanup.service
 )
 installed docker && services+=(docker.socket)
 for service in "${services[@]}"; do

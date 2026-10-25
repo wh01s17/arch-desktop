@@ -208,7 +208,8 @@ if ! $resume; then
   mount -o "$opts,subvol=@containerd" "$root" /mnt/var/lib/containerd
   mount -o "$opts,subvol=@swap" "$root" /mnt/swap
   if $format_esp; then mkfs.fat -F32 "$esp"; fi
-  mount "$esp" /mnt/boot
+  # Only root reads the ESP: systemd refuses a world-readable random seed there.
+  mount -o fmask=0077,dmask=0077 "$esp" /mnt/boot
 fi
 stage=system
 

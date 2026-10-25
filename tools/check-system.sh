@@ -40,8 +40,9 @@ info "cmdline: $(tr ' ' '\n' </proc/cmdline | grep -E '^(cryptdevice|root|rootfl
 info "hooks: $(grep -h '^HOOKS' /etc/mkinitcpio.conf.d/*.conf 2>/dev/null | paste -sd' ')"
 check "Limine instalado" pacman -Q limine
 check "limine-snapper-sync activo" systemctl is-enabled limine-snapper-sync.service
-if configs=$(sudo -n snapper --no-headers list-configs 2>/dev/null | awk '{print $1}' | paste -sd' '); then
-  info "snapper: ${configs:-sin configuraciones} · instantáneas de root: $(sudo -n snapper --no-headers -c root list 2>/dev/null | wc -l)"
+# CSV: the table output keeps translated headers and box drawing even with --no-headers.
+if configs=$(sudo -n snapper --csvout --no-headers list-configs 2>/dev/null | cut -d, -f1 | paste -sd' '); then
+  info "snapper: ${configs:-sin configuraciones} · instantáneas de root: $(sudo -n snapper --csvout --no-headers -c root list --columns number 2>/dev/null | grep -cvx 0)"
 else
   info "snapper: sin permisos para leerlo"
 fi
