@@ -55,8 +55,8 @@ cd ~/workspace/arch-desktop
 ./install.sh
 ```
 
-El instalador detecta el modelo, la GPU, las pantallas, la batería, el
-arranque y el receptor Logitech, y pregunta por:
+El instalador detecta el modelo, la GPU, las pantallas, la batería y el
+arranque, y pregunta por:
 
 - el perfil de monitores (`omen`, `hp-gray` o `auto` para cualquier equipo);
 - el driver de la GPU;

@@ -38,11 +38,6 @@ detect_hardware() {
     DETECT_BOOTLOADER=desconocido
   fi
 
-  DETECT_LOGITECH=no
-  if grep -qsx '046d' "$SYSFS_ROOT"/bus/usb/devices/*/idVendor 2>/dev/null; then
-    DETECT_LOGITECH=yes
-  fi
-
   DETECT_PROFILE=$(profile_for_product "$DETECT_PRODUCT")
 }
 
@@ -121,6 +116,6 @@ print_detection() {
   else
     info 'Pantallas: ninguna detectada desde /sys'
   fi
-  info "Raíz: $DETECT_ROOT_FS${DETECT_ROOT_SUBVOL:+ ($DETECT_ROOT_SUBVOL)} · arranque: $DETECT_BOOTLOADER · receptor Logitech: $DETECT_LOGITECH"
+  info "Raíz: $DETECT_ROOT_FS${DETECT_ROOT_SUBVOL:+ ($DETECT_ROOT_SUBVOL)} · arranque: $DETECT_BOOTLOADER"
   info "Perfil conocido para este modelo: ${DETECT_PROFILE:-ninguno}"
 }

@@ -69,7 +69,6 @@ quickshell
 sddm
 slurp
 socat
-solaar
 sushi
 system-config-printer
 tesseract
