@@ -254,6 +254,11 @@ fi
 log 'Limine'
 mkdir -p /mnt/boot/EFI/limine
 cp /mnt/usr/share/limine/BOOTX64.EFI /mnt/boot/EFI/limine/
+# Some firmware (HP among them) ignores new boot entries and only starts the
+# fallback path. Leave it alone if something, such as Windows, already uses it.
+if [[ ! -e /mnt/boot/EFI/BOOT/BOOTX64.EFI ]]; then
+  install -D -m 0644 /mnt/usr/share/limine/BOOTX64.EFI /mnt/boot/EFI/BOOT/BOOTX64.EFI
+fi
 # Entries from an earlier install or run point at partitions that may be gone.
 efibootmgr | sed -n 's/^Boot\([0-9A-Fa-f]\{4\}\)[* ] Arch Linux\(\t.*\)\{0,1\}$/\1/p' |
   while read -r num; do efibootmgr -q -b "$num" -B; done
@@ -287,8 +292,14 @@ if [[ ! -d /mnt/home/$user/workspace/arch-desktop/.git ]]; then
     git clone "https://github.com/$REPO.git" "/home/$user/workspace/arch-desktop"
 fi
 
-umount -R /mnt
-if $encrypt; then cryptsetup close root; fi
+sync
+# Everything is written; a busy mount (a leftover gpg-agent) only delays
+# the unmount until the reboot.
+if ! umount -R /mnt; then
+  echo '    /mnt sigue ocupado; se desmontará al reiniciar.'
+elif $encrypt; then
+  cryptsetup close root || true
+fi
 log 'Listo. Reinicia con: reboot'
 cat <<EOF
     En la TTY, como $user:
