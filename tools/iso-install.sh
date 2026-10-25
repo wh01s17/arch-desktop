@@ -43,6 +43,14 @@ is_yes() {
 }
 # device NAME: accepts nvme0n1 as well as /dev/nvme0n1
 device() { [[ -z $1 || $1 == /* ]] && echo "$1" || echo "/dev/$1"; }
+# is_windows DEV: Windows data, its reserved or recovery partition, or BitLocker
+is_windows() {
+  [[ $(lsblk -dno TYPE "$1" 2>/dev/null) == part ]] || return 1
+  case "$(lsblk -dno FSTYPE "$1")|$(lsblk -dno PARTTYPENAME "$1")" in
+    ntfs\|* | BitLocker\|* | *\|Microsoft* | *\|Windows*) return 0 ;;
+  esac
+  return 1
+}
 
 [[ -d /run/archiso ]] || die 'Ejecútalo desde el ISO de Arch.'
 ((EUID == 0)) || die 'Ejecútalo como root (el ISO ya entra como root).'
@@ -82,7 +90,16 @@ else
   lsblk -o NAME,SIZE,FSTYPE,LABEL,PARTTYPENAME
   echo '    1) Disco entero: lo borra y crea una ESP de 1 GB y el resto btrfs (sin Windows)'
   echo '    2) Particiones: elige la de Linux y reutiliza la ESP (con Windows)'
-  prompt mode 'Modo' 1
+  # With Windows anywhere, the default must not be the mode that wipes a disk.
+  default_mode=1
+  for dev in $(lsblk -lnpo NAME); do
+    if is_windows "$dev"; then
+      default_mode=2
+      echo '    Hay Windows en este equipo: el modo 2 lo conserva.'
+      break
+    fi
+  done
+  prompt mode 'Modo' "$default_mode"
   whole_disk=false
   case $mode in
     1)
@@ -91,6 +108,9 @@ else
       disk=$(device "$disk")
       [[ -b $disk && $(lsblk -dno TYPE "$disk") == disk ]] || die "$disk no es un disco."
       ! lsblk -no MOUNTPOINTS "$disk" | grep -q . || die "$disk tiene particiones montadas."
+      for p in $(lsblk -lnpo NAME "$disk" | tail -n +2); do
+        ! is_windows "$p" || die "$disk tiene Windows ($p). Usa el modo 2 para conservarlo; si de verdad quieres borrarlo, elimina antes sus particiones con cfdisk."
+      done
       format_esp=true
       ;;
     2)
@@ -108,6 +128,8 @@ else
       [[ -b $root && $(lsblk -dno TYPE "$root") == part ]] || die "$root no es una partición."
       [[ -b $esp && $(lsblk -dno TYPE "$esp") == part ]] || die "$esp no es una partición."
       [[ $root != "$esp" ]] || die 'La partición de Linux y la ESP no pueden ser la misma.'
+      ! is_windows "$root" || die "$root es de Windows ($(lsblk -dno FSTYPE,PARTTYPENAME "$root" | xargs)); no se toca. Elige la partición de Linux."
+      [[ $(lsblk -dno PARTTYPENAME "$root") != 'EFI System' ]] || die "$root es una ESP, no la partición de Linux."
       [[ $(lsblk -dno PARTTYPENAME "$esp") == 'EFI System' ]] ||
         die "$esp no es de tipo «EFI System»; cámbialo con cfdisk o elige otra."
       # An empty ESP is formatted; one with a file system (Windows') is reused as is.
@@ -117,6 +139,22 @@ else
         '') format_esp=true ;;
         *) die "$esp no es FAT32." ;;
       esac
+      if ! $format_esp; then
+        # linux and linux-lts with their initramfs need roughly 250 MiB; files
+        # with the same names from an earlier Arch are replaced, so they count.
+        espdir=$(mktemp -d)
+        mount -o ro "$esp" "$espdir"
+        old_kernels=$(find "$espdir" -maxdepth 1 \( -name 'vmlinuz-*' -o -name 'initramfs-*' \) \
+          -printf '%s\n' | awk '{s += $1} END {print int(s / 1048576)}')
+        free_mib=$(($(df --output=avail -B1M "$espdir" | tail -1) + old_kernels))
+        umount "$espdir"
+        rmdir "$espdir"
+        if ((free_mib < 300)); then
+          echo "    La ESP sólo tiene ${free_mib} MiB libres para los kernels (se necesitan unos 300)."
+          prompt again '¿Seguir igual? Si se llena, la instalación falla, pero Windows no se toca (s/n)' n
+          is_yes "$again" || die 'Cancelado; no se cambió nada.'
+        fi
+      fi
       ;;
     *) die "Modo no válido: $mode" ;;
   esac
