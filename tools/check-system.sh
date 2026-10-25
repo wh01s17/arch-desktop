@@ -25,7 +25,17 @@ grep -E '^WH_' ~/.config/wh01s17/machine.env 2>/dev/null | sed 's/^/        /'
 
 echo "== Arranque y disco"
 root_src=$(findmnt -no SOURCE / | sed 's/\[.*//')
-if lsblk -s -no TYPE "$root_src" 2>/dev/null | grep -qx crypt; then ok "raíz cifrada con LUKS ($root_src)"; else info "raíz sin cifrar ($root_src)"; fi
+if lsblk -s -no TYPE "$root_src" 2>/dev/null | grep -qx crypt; then
+  ok "raíz cifrada con LUKS ($root_src)"
+  crypt_name=$(lsblk -rs -no NAME,TYPE "$root_src" | awk '$2 == "crypt" {print $1; exit}')
+  if [[ $(lsblk -dno DISC-MAX "/dev/mapper/$crypt_name" 2>/dev/null | tr -d ' ') == 0B ]]; then
+    bad "LUKS sin allow-discards: discard=async no llega al SSD"
+  else
+    ok "TRIM atraviesa LUKS"
+  fi
+else
+  info "raíz sin cifrar ($root_src)"
+fi
 info "cmdline: $(tr ' ' '\n' </proc/cmdline | grep -E '^(cryptdevice|root|rootflags|resume|resume_offset|rd\.luks[^=]*)=' | paste -sd' ')"
 info "hooks: $(grep -h '^HOOKS' /etc/mkinitcpio.conf.d/*.conf 2>/dev/null | paste -sd' ')"
 check "Limine instalado" pacman -Q limine

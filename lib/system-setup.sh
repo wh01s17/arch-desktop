@@ -204,6 +204,12 @@ root_source=$(findmnt -no SOURCE / | sed 's/\[.*//')
 if lsblk -no TYPE "$root_source" 2>/dev/null | grep -qx crypt ||
   lsblk -s -no TYPE "$root_source" 2>/dev/null | grep -qx crypt; then
   hooks+=(encrypt)
+  # discard=async does nothing on dm-crypt unless the mapping allows discards.
+  crypt_name=$(lsblk -rs -no NAME,TYPE "$root_source" | awk '$2 == "crypt" {print $1; exit}') || true
+  if [[ $(lsblk -dno DISC-MAX "/dev/mapper/$crypt_name" 2>/dev/null | tr -d ' ') == 0B ]]; then
+    printf '[!] LUKS no deja pasar TRIM al SSD: añade :allow-discards a cryptdevice= o, con LUKS2, ejecuta\n' >&2
+    printf '    cryptsetup refresh --allow-discards --persistent %s\n' "$crypt_name" >&2
+  fi
 fi
 hooks+=(filesystems fsck)
 if installed limine-mkinitcpio-hook && [[ $(findmnt -no FSTYPE /) == btrfs ]]; then
