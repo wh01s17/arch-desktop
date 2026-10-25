@@ -77,7 +77,8 @@ espera por defecto (`/@` y `/@/.snapshots`):
 | `@home` | `/home` | Home, VMs, Steam y `~/.cache` fuera de los snapshots |
 | `@log` | `/var/log` | Los logs sobreviven a una restauración |
 | `@pkg` | `/var/cache/pacman/pkg` | La caché de pacman fuera de los snapshots |
-| `@docker` | `/var/lib/docker` | Las imágenes de Docker fuera de los snapshots |
+| `@docker` | `/var/lib/docker` | Contenedores y volúmenes de Docker fuera de los snapshots |
+| `@containerd` | `/var/lib/containerd` | Las capas de las imágenes: Docker 29 las guarda en containerd |
 | `@swap` | `/swap` | Swapfile de hibernación, sin copy-on-write |
 
 `/.snapshots` no se crea aquí: el instalador ejecuta `snapper create-config /`,
@@ -85,18 +86,19 @@ que lo crea dentro de `@`.
 
 ```bash
 mount /dev/nvme0n1p4 /mnt
-for sv in @ @home @log @pkg @docker @swap; do btrfs subvolume create "/mnt/$sv"; done
+for sv in @ @home @log @pkg @docker @containerd @swap; do btrfs subvolume create "/mnt/$sv"; done
 chattr +C /mnt/@swap
 umount /mnt
 
 opts=relatime,ssd,discard=async,space_cache=v2,compress=zstd:1
 mount -o "$opts,subvol=@" /dev/nvme0n1p4 /mnt
-mkdir -p /mnt/{home,var/log,var/cache/pacman/pkg,var/lib/docker,swap,boot}
-mount -o "$opts,subvol=@home"   /dev/nvme0n1p4 /mnt/home
-mount -o "$opts,subvol=@log"    /dev/nvme0n1p4 /mnt/var/log
-mount -o "$opts,subvol=@pkg"    /dev/nvme0n1p4 /mnt/var/cache/pacman/pkg
-mount -o "$opts,subvol=@docker" /dev/nvme0n1p4 /mnt/var/lib/docker
-mount -o "$opts,subvol=@swap"   /dev/nvme0n1p4 /mnt/swap
+mkdir -p /mnt/{home,var/log,var/cache/pacman/pkg,var/lib/docker,var/lib/containerd,swap,boot}
+mount -o "$opts,subvol=@home"       /dev/nvme0n1p4 /mnt/home
+mount -o "$opts,subvol=@log"        /dev/nvme0n1p4 /mnt/var/log
+mount -o "$opts,subvol=@pkg"        /dev/nvme0n1p4 /mnt/var/cache/pacman/pkg
+mount -o "$opts,subvol=@docker"     /dev/nvme0n1p4 /mnt/var/lib/docker
+mount -o "$opts,subvol=@containerd" /dev/nvme0n1p4 /mnt/var/lib/containerd
+mount -o "$opts,subvol=@swap"       /dev/nvme0n1p4 /mnt/swap
 mount /dev/nvme0n1p1 /mnt/boot          # la ESP (Omarchy la monta en /boot)
 ```
 
@@ -220,7 +222,7 @@ systemctl --failed; systemctl --user --failed
 nvidia-smi                           # con GPU NVIDIA
 cat /sys/module/nvidia_drm/parameters/modeset   # Y
 snapper list                         # snapshots de pacman (snap-pac)
-sudo btrfs subvolume list /          # @, @home, @log, @pkg, @docker, @swap y @/.snapshots
+sudo btrfs subvolume list /          # @, @home, @log, @pkg, @docker, @containerd, @swap y @/.snapshots
 findmnt -t btrfs -o TARGET,OPTIONS   # / con subvol=/@ y compress=zstd:1
 lsattr -d ~/"VirtualBox VMs"         # con la C de no copy-on-write
 ```

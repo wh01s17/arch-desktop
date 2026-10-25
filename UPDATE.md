@@ -80,3 +80,28 @@ Mientras tanto, limita la caché de pacman, que también queda en los snapshots:
 ```bash
 sudo systemctl enable --now paccache.timer
 ```
+
+## Equipos con `@` pero sin `@containerd`
+
+Docker 29 guarda las capas de las imágenes en `/var/lib/containerd`, no en
+`/var/lib/docker`. Si ese directorio no tiene su propio subvolumen, queda
+dentro de `@`: los snapshots lo incluyen y `docker image prune` no libera
+espacio. `tools/check-system.sh` lo avisa. Para moverlo a `@containerd`:
+
+```bash
+sudo systemctl stop docker.socket docker.service containerd.service
+top=$(mktemp -d)
+sudo mount -o subvol=/ "$(findmnt -no SOURCE / | sed 's/\[.*//')" "$top"
+sudo btrfs subvolume create "$top/@containerd"
+sudo cp -a --reflink=always /var/lib/containerd/. "$top/@containerd/"
+sudo umount "$top"
+sudo rm -rf /var/lib/containerd && sudo mkdir /var/lib/containerd
+grep -E '[[:space:]]/var/lib/docker[[:space:]]' /etc/fstab |
+  sed 's#/var/lib/docker#/var/lib/containerd#; s#@docker#@containerd#' |
+  sudo tee -a /etc/fstab
+sudo systemctl daemon-reload && sudo mount /var/lib/containerd
+sudo systemctl start docker.socket docker.service
+```
+
+El espacio de las capas antiguas vuelve cuando snapper borra los snapshots que
+las contienen (conserva cinco).
