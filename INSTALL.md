@@ -37,7 +37,8 @@ Para el arranque dual con Windows, sigue `omarchy/dual-boot.md` (repo privado po
 
 `tools/iso-install.sh` hace todo este apartado. Sin Windows, borra el disco
 entero y crea la ESP y la partición de btrfs; con Windows, eliges la partición
-de Linux y reutiliza su ESP. Pregunta el equipo, el usuario y las contraseñas,
+de Linux y reutiliza su ESP. Cifra la partición de Linux con LUKS2 (con TRIM)
+salvo que respondas que no. Pregunta el equipo, el usuario y las contraseñas,
 y pide escribir `BORRAR` antes de tocar el disco. Desde el ISO, con red:
 
 ```bash

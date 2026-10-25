@@ -27,6 +27,7 @@ device() { [[ -z $1 || $1 == /* ]] && echo "$1" || echo "/dev/$1"; }
 ((EUID == 0)) || die 'Ejecútalo como root (el ISO ya entra como root).'
 [[ -d /sys/firmware/efi ]] || die 'Arranca el ISO en modo UEFI.'
 ! mountpoint -q /mnt || die '/mnt ya está montado: umount -R /mnt'
+[[ ! -e /dev/mapper/root ]] || die 'Ya hay un volumen cifrado abierto: cryptsetup close root'
 
 log 'Discos'
 lsblk -o NAME,SIZE,FSTYPE,LABEL,PARTTYPENAME
@@ -86,6 +87,22 @@ case $(awk '/^vendor_id/ {print $3; exit}' /proc/cpuinfo) in
   *) die 'CPU no reconocida (ni Intel ni AMD).' ;;
 esac
 
+prompt encrypt '¿Cifrar la partición de Linux con LUKS? (s/n)' s
+case ${encrypt,,} in
+  s | si | sí | y | yes) encrypt=true ;;
+  n | no) encrypt=false ;;
+  *) die "Respuesta no válida: $encrypt" ;;
+esac
+if $encrypt; then
+  # The initramfs asks for it with the US keymap, the same as this ISO.
+  while :; do
+    read -rs -p 'Contraseña del cifrado (se pide en cada arranque): ' luks_pass && echo
+    read -rs -p 'Repítela: ' luks_again && echo
+    [[ -n $luks_pass && $luks_pass == "$luks_again" ]] && break
+    echo '    Vacía o no coinciden; otra vez.'
+  done
+fi
+
 log 'Resumen'
 if $whole_disk; then
   printf '    Se BORRA ENTERO: %s\n' "$(lsblk -dno NAME,SIZE,MODEL "$disk")"
@@ -100,6 +117,7 @@ elif $format_esp; then
 else
   printf '    ESP:       %s (se reutiliza, no se formatea)\n' "$esp"
 fi
+printf '    Cifrado:   %s\n' "$($encrypt && echo 'LUKS2, con TRIM' || echo 'no')"
 printf '    Equipo:    %s · usuario %s · %s\n' "$host" "$user" "$ucode"
 prompt confirm 'Escribe BORRAR para continuar'
 [[ $confirm == BORRAR ]] || die 'Cancelado; no se cambió nada.'
@@ -114,6 +132,17 @@ if $whole_disk; then
   mapfile -t parts < <(lsblk -lnpo NAME,TYPE "$disk" | awk '$2 == "part" {print $1}')
   ((${#parts[@]} == 2)) || die "No aparecieron las dos particiones nuevas en $disk."
   esp=${parts[0]} root=${parts[1]}
+fi
+
+# root is what btrfs goes on; part stays the partition, for the boot entry.
+part=$root
+if $encrypt; then
+  log 'Cifrado LUKS'
+  printf %s "$luks_pass" | cryptsetup luksFormat --type luks2 --batch-mode --key-file=- "$part"
+  # --persistent stores allow-discards in the header, so discard=async reaches the SSD.
+  printf %s "$luks_pass" | cryptsetup open --allow-discards --persistent --key-file=- "$part" root
+  unset luks_pass luks_again
+  root=/dev/mapper/root
 fi
 
 log 'btrfs y subvolúmenes'
@@ -160,6 +189,17 @@ until arch-chroot /mnt passwd "$user"; do :; done
 echo 'Contraseña de root:'
 until arch-chroot /mnt passwd; do :; done
 
+if $encrypt; then
+  log 'initramfs con desbloqueo LUKS'
+  # The same hooks lib/system-setup.sh writes later for an encrypted root.
+  install -D -m 0644 /dev/stdin /mnt/etc/mkinitcpio.conf.d/wh01s17_hooks.conf <<'EOF'
+# Escrito por arch-desktop (wh01s17).
+HOOKS=(base udev keyboard autodetect microcode modconf kms keymap consolefont block encrypt filesystems fsck)
+FILES+=(/etc/vconsole.conf)
+EOF
+  arch-chroot /mnt mkinitcpio -P
+fi
+
 log 'Limine'
 mkdir -p /mnt/boot/EFI/limine
 cp /mnt/usr/share/limine/BOOTX64.EFI /mnt/boot/EFI/limine/
@@ -167,7 +207,12 @@ esp_name=$(basename "$(readlink -f "$esp")")
 efibootmgr --create --disk "/dev/$(lsblk -dno PKNAME "$esp")" \
   --part "$(</sys/class/block/"$esp_name"/partition)" \
   --label 'Arch Linux' --loader '\EFI\limine\BOOTX64.EFI' --unicode >/dev/null
-cmdline="root=PARTUUID=$(blkid -s PARTUUID -o value "$root") rootflags=subvol=@ zswap.enabled=0 rw rootfstype=btrfs"
+if $encrypt; then
+  cmdline="cryptdevice=UUID=$(blkid -s UUID -o value "$part"):root root=/dev/mapper/root"
+else
+  cmdline="root=PARTUUID=$(blkid -s PARTUUID -o value "$part")"
+fi
+cmdline+=" rootflags=subvol=@ zswap.enabled=0 rw rootfstype=btrfs"
 cat >/mnt/etc/default/limine <<EOF
 ESP_PATH="/boot"
 KERNEL_CMDLINE[default]+="$cmdline"
@@ -187,6 +232,7 @@ arch-chroot /mnt runuser -u "$user" -- \
   git clone "https://github.com/$REPO.git" "/home/$user/workspace/arch-desktop"
 
 umount -R /mnt
+if $encrypt; then cryptsetup close root; fi
 log 'Listo. Reinicia con: reboot'
 cat <<EOF
     En la TTY, como $user:
