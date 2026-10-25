@@ -54,12 +54,16 @@ if mountpoint -q /mnt; then
     die '/mnt ya está montado y no es una instalación a medias de este script: umount -R /mnt'
   log 'Instalación a medias en /mnt'
   findmnt -R -o TARGET,SOURCE /mnt | sed 's/^/    /'
-  prompt again '¿Continuar desde los paquetes, sin tocar el disco? (s/n)' s
-  is_yes "$again" ||
-    die 'Para empezar de cero: umount -R /mnt; cryptsetup close root (si estaba cifrado).'
-  resume=true
-elif [[ -e /dev/mapper/root ]]; then
-  die 'Ya hay un volumen cifrado abierto y nada montado: cryptsetup close root'
+  prompt again '¿Continuar desde los paquetes, sin tocar el disco? n empieza de cero (s/n)' s
+  if is_yes "$again"; then
+    resume=true
+  else
+    umount -R /mnt
+  fi
+fi
+# A fresh install reformats the partition, so an open container can go.
+if ! $resume && [[ -e /dev/mapper/root ]]; then
+  cryptsetup close root
 fi
 
 if $resume; then
