@@ -17,6 +17,8 @@ die() { printf '\n\033[1;31m[ERROR]\033[0m %s\n' "$1" >&2; exit 1; }
 # The disk is ready once stage is "system"; from then on a rerun resumes.
 stage=disk
 on_error() {
+  # A failure inside $(…) also reaches here; only the main shell reports it.
+  [[ $BASHPID == "$$" ]] || exit 1
   if [[ $stage == system ]]; then
     die "Falló en la línea $1. El disco ya está listo y montado en /mnt: corrige lo que indique la salida y vuelve a ejecutar el script; continúa desde los paquetes."
   fi
@@ -65,7 +67,8 @@ if $resume; then
   esp=$(findmnt -no SOURCE /mnt/boot)
   if [[ $(lsblk -dno TYPE "$root") == crypt ]]; then
     encrypt=true
-    part=/dev/$(lsblk -dno PKNAME "$root")
+    part=$(cryptsetup status "$(basename "$root")" | awk '$1 == "device:" {print $2}')
+    [[ -b $part ]] || die "No se encontró la partición cifrada bajo $root."
   else
     encrypt=false
     part=$root
