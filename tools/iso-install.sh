@@ -28,27 +28,41 @@ prompt() {
 
 log 'Discos'
 lsblk -o NAME,SIZE,FSTYPE,LABEL,PARTTYPENAME
-prompt part_disk '¿Crear o cambiar particiones con cfdisk? Escribe el disco (p. ej. /dev/nvme0n1) o Enter para seguir'
-if [[ -n $part_disk ]]; then
-  [[ -b $part_disk ]] || die "$part_disk no existe."
-  cfdisk "$part_disk"
-  lsblk -o NAME,SIZE,FSTYPE,LABEL,PARTTYPENAME
-fi
-
-prompt root 'Partición de Linux (SE BORRA)'
-prompt esp 'ESP, la partición FAT32 de arranque (la de Windows si la hay)'
-[[ -b $root && $(lsblk -dno TYPE "$root") == part ]] || die "$root no es una partición."
-[[ -b $esp && $(lsblk -dno TYPE "$esp") == part ]] || die "$esp no es una partición."
-[[ $root != "$esp" ]] || die 'La partición de Linux y la ESP no pueden ser la misma.'
-
-[[ $(lsblk -dno PARTTYPENAME "$esp") == 'EFI System' ]] ||
-  die "$esp no es de tipo «EFI System»; cámbialo con cfdisk o elige otra."
-# An empty ESP is formatted; one with a file system (Windows') is reused as is.
-format_esp=false
-case $(blkid -o value -s TYPE "$esp" || true) in
-  vfat) ;;
-  '') format_esp=true ;;
-  *) die "$esp no es FAT32." ;;
+echo '    1) Disco entero: lo borra y crea una ESP de 1 GB y el resto btrfs (sin Windows)'
+echo '    2) Particiones: elige la de Linux y reutiliza la ESP (con Windows)'
+prompt mode 'Modo' 1
+whole_disk=false
+case $mode in
+  1)
+    whole_disk=true
+    prompt disk 'Disco que se BORRA ENTERO (p. ej. /dev/nvme0n1)'
+    [[ -b $disk && $(lsblk -dno TYPE "$disk") == disk ]] || die "$disk no es un disco."
+    ! lsblk -no MOUNTPOINTS "$disk" | grep -q . || die "$disk tiene particiones montadas."
+    format_esp=true
+    ;;
+  2)
+    prompt part_disk '¿Crear o cambiar particiones con cfdisk? Escribe el disco o Enter para seguir'
+    if [[ -n $part_disk ]]; then
+      [[ -b $part_disk ]] || die "$part_disk no existe."
+      cfdisk "$part_disk"
+      lsblk -o NAME,SIZE,FSTYPE,LABEL,PARTTYPENAME
+    fi
+    prompt root 'Partición de Linux (SE BORRA)'
+    prompt esp 'ESP, la partición FAT32 de arranque (la de Windows)'
+    [[ -b $root && $(lsblk -dno TYPE "$root") == part ]] || die "$root no es una partición."
+    [[ -b $esp && $(lsblk -dno TYPE "$esp") == part ]] || die "$esp no es una partición."
+    [[ $root != "$esp" ]] || die 'La partición de Linux y la ESP no pueden ser la misma.'
+    [[ $(lsblk -dno PARTTYPENAME "$esp") == 'EFI System' ]] ||
+      die "$esp no es de tipo «EFI System»; cámbialo con cfdisk o elige otra."
+    # An empty ESP is formatted; one with a file system (Windows') is reused as is.
+    format_esp=false
+    case $(blkid -o value -s TYPE "$esp" || true) in
+      vfat) ;;
+      '') format_esp=true ;;
+      *) die "$esp no es FAT32." ;;
+    esac
+    ;;
+  *) die "Modo no válido: $mode" ;;
 esac
 
 # Proposes the profile name from profiles/machines.tsv as the hostname.
@@ -67,8 +81,15 @@ case $(awk '/^vendor_id/ {print $3; exit}' /proc/cpuinfo) in
 esac
 
 log 'Resumen'
-printf '    Se BORRA:  %s\n' "$(lsblk -dno NAME,SIZE,FSTYPE,LABEL "$root")"
-if $format_esp; then
+if $whole_disk; then
+  printf '    Se BORRA ENTERO: %s\n' "$(lsblk -dno NAME,SIZE,MODEL "$disk")"
+  lsblk -no NAME,SIZE,FSTYPE,LABEL "$disk" | tail -n +2 | sed 's/^/      /'
+else
+  printf '    Se BORRA:  %s\n' "$(lsblk -dno NAME,SIZE,FSTYPE,LABEL "$root")"
+fi
+if $whole_disk; then
+  printf '    ESP:       nueva, 1 GB\n'
+elif $format_esp; then
   printf '    ESP:       %s (vacía: se formatea en FAT32)\n' "$esp"
 else
   printf '    ESP:       %s (se reutiliza, no se formatea)\n' "$esp"
@@ -76,6 +97,18 @@ fi
 printf '    Equipo:    %s · usuario %s · %s\n' "$host" "$user" "$ucode"
 prompt confirm 'Escribe BORRAR para continuar'
 [[ $confirm == BORRAR ]] || die 'Cancelado; no se cambió nada.'
+
+if $whole_disk; then
+  log 'Particiones'
+  wipefs -a "$disk" >/dev/null
+  sgdisk --zap-all "$disk" >/dev/null
+  sgdisk -n1:0:+1G -t1:ef00 -c1:EFI -n2:0:0 -t2:8300 -c2:arch "$disk" >/dev/null
+  partprobe "$disk"
+  udevadm settle
+  mapfile -t parts < <(lsblk -lnpo NAME,TYPE "$disk" | awk '$2 == "part" {print $1}')
+  ((${#parts[@]} == 2)) || die "No aparecieron las dos particiones nuevas en $disk."
+  esp=${parts[0]} root=${parts[1]}
+fi
 
 log 'btrfs y subvolúmenes'
 mkfs.btrfs -f -L arch "$root"

@@ -35,9 +35,10 @@ Para el arranque dual con Windows, sigue `omarchy/dual-boot.md` (repo privado po
 
 ## 2. Sistema base desde el ISO de Arch
 
-`tools/iso-install.sh` hace todo este apartado: pregunta las particiones, el
-equipo, el usuario y las contraseñas, y pide escribir `BORRAR` antes de
-formatear. Desde el ISO, con red:
+`tools/iso-install.sh` hace todo este apartado. Sin Windows, borra el disco
+entero y crea la ESP y la partición de btrfs; con Windows, eliges la partición
+de Linux y reutiliza su ESP. Pregunta el equipo, el usuario y las contraseñas,
+y pide escribir `BORRAR` antes de tocar el disco. Desde el ISO, con red:
 
 ```bash
 iwctl station wlan0 connect "MiRed"
