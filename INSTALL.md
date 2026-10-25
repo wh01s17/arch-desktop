@@ -43,9 +43,13 @@ y pide escribir `BORRAR` antes de tocar el disco. Desde el ISO, con red:
 
 ```bash
 iwctl station wlan0 connect "MiRed"
-curl -LO https://raw.githubusercontent.com/wh01s17/arch-desktop/main/tools/iso-install.sh
-bash iso-install.sh
+git clone https://github.com/wh01s17/arch-desktop
+bash arch-desktop/tools/iso-install.sh
 ```
+
+Si falla después de preparar el disco (por ejemplo, una descarga), vuelve a
+ejecutarlo: detecta la instalación a medias en `/mnt` y continúa desde los
+paquetes sin tocar el disco.
 
 Lo que sigue son los mismos pasos a mano.
 
