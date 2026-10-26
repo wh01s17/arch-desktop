@@ -147,6 +147,35 @@ else
   rm -f /etc/sddm.conf.d/autologin.conf
 fi
 
+step 'Lector de huellas'
+# Replaces wh01s17-setup-security-fingerprint, which swaps in libfprint-git and
+# gates PAM on /usr/bin/wh01s17-hw-laptop-closed, a path that does not exist
+# here. Every stack keeps the password as fallback; enroll with fprintd-enroll.
+if wh01s17-hw-fingerprint; then
+  if pacman -S --needed --noconfirm fprintd libfprint; then
+    # pam_exec runs the lid check as root: install a root-owned copy.
+    install -m 0755 "$WH01S17_PATH/bin/wh01s17-hw-laptop-closed" /usr/local/bin/
+    # Lid closed (external monitor) → skip the unreachable reader.
+    gate='auth      [success=1 default=ignore] pam_exec.so quiet /usr/local/bin/wh01s17-hw-laptop-closed'
+    if ! grep -q pam_fprintd.so /etc/pam.d/sudo; then
+      sed -i "0,/^auth/s||$gate\nauth      sufficient pam_fprintd.so\nauth|" /etc/pam.d/sudo
+    fi
+    # SDDM checks a typed password first; an empty one falls through to the reader.
+    if ! grep -q pam_fprintd.so /etc/pam.d/sddm; then
+      sed -i "0,/^auth/s||auth      [success=2 new_authtok_reqd=2 default=ignore] pam_unix.so try_first_pass likeauth nullok\n$gate\nauth      sufficient pam_fprintd.so\nauth|" /etc/pam.d/sddm
+    fi
+    # The lock screen tries the reader only while this service exists and a
+    # finger is enrolled; it also stops the first-run setup notification.
+    install -D -m 0644 /dev/stdin /etc/pam.d/wh01s17-lock-fingerprint <<'EOF'
+#%PAM-1.0
+auth       required                    pam_fprintd.so
+account    include                     system-local-login
+EOF
+  else
+    failed+=('Lector de huellas (fprintd)')
+  fi
+fi
+
 step 'Pasos finales'
 leaf post-install/pacman.sh
 leaf post-install/udev.sh

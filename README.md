@@ -80,7 +80,7 @@ opciones.
 | `stow` | Genera `.arch-build/`; enlaza `platform`, `maintenance`, `desktop`, `terminal` y `apps` (sin plegar), con respaldo de conflictos |
 | `seed` | Configuración por defecto del runtime donde no hay una tuya; Neovim (LazyVim) |
 | `machine` | `machine-profile.lua` de Hyprland y `machine-profile.conf` de Kitty |
-| `system` | `lib/system-setup.sh` como root: archivos y pasos de sistema, firewall, hardware, SDDM con autologin, servicios (incluido `paccache.timer`), initramfs y Limine |
+| `system` | `lib/system-setup.sh` como root: archivos y pasos de sistema, firewall, hardware, SDDM con autologin, huella en sudo/SDDM/bloqueo si hay lector, servicios (incluido `paccache.timer`), initramfs y Limine |
 | `user` | `wh01s17-provision-user`: tema, llavero, git, mise, directorios XDG; Firefox como navegador; plugin lock-explorer; `~/VirtualBox VMs` sin copy-on-write |
 | `hibernate` | `wh01s17-hibernation-setup` |
 | `shell` | Oh My Zsh, plugins, NVM y `chsh` a Zsh |

@@ -224,6 +224,11 @@ convertirlo en un perfil con nombre, copia `profiles/hp-gray.lua` como base,
 añade su nombre al mapa de `monitors.lua` y su modelo a
 `profiles/machines.tsv`.
 
+Si el equipo tiene lector de huellas, la etapa `system` instala `fprintd` y
+activa la huella en sudo, SDDM y el bloqueo de pantalla, con la contraseña como
+respaldo. Registra un dedo con `fprintd-enroll` y pruébalo con `fprintd-verify`;
+en SDDM, pulsa Enter con el campo vacío y apoya el dedo.
+
 ## 4. Comprobaciones
 
 ```bash
