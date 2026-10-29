@@ -256,9 +256,14 @@ if ! $resume; then
   mount -o "$opts,subvol=@docker" "$root" /mnt/var/lib/docker
   mount -o "$opts,subvol=@containerd" "$root" /mnt/var/lib/containerd
   mount -o "$opts,subvol=@swap" "$root" /mnt/swap
-  if $format_esp; then mkfs.fat -F32 "$esp"; fi
+  # mkfs.fat leaves older signatures in place, and blkid then can't tell the
+  # file system apart; the mount names vfat for the same reason.
+  if $format_esp; then
+    wipefs -a "$esp" >/dev/null
+    mkfs.fat -F32 "$esp"
+  fi
   # Only root reads the ESP: systemd refuses a world-readable random seed there.
-  mount -o fmask=0077,dmask=0077 "$esp" /mnt/boot
+  mount -t vfat -o fmask=0077,dmask=0077 "$esp" /mnt/boot
 fi
 stage=system
 
