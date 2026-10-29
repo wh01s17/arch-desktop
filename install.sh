@@ -741,7 +741,7 @@ stage_shell() {
   local zsh_path
   zsh_path=$(command -v zsh || echo /usr/bin/zsh)
   if [[ $(getent passwd "$USER" | cut -d: -f7) != "$zsh_path" ]]; then
-    run chsh -s "$zsh_path" || note "No se pudo cambiar la shell; ejecuta: chsh -s $zsh_path"
+    as_root chsh -s "$zsh_path" "$USER" || note "No se pudo cambiar la shell; ejecuta: chsh -s $zsh_path"
   fi
 }
 
