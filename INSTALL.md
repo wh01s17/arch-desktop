@@ -160,7 +160,7 @@ Dentro del chroot:
 ln -sf /usr/share/zoneinfo/America/Santiago /etc/localtime   # tu zona
 hwclock --systohc
 sed -i 's/^#\(es_CL.UTF-8\|en_US.UTF-8\)/\1/' /etc/locale.gen && locale-gen
-echo 'LANG=es_CL.UTF-8' > /etc/locale.conf
+printf '%s\n' LANG=en_US.UTF-8 LC_TIME=es_CL.UTF-8 LC_MEASUREMENT=es_CL.UTF-8 LC_PAPER=es_CL.UTF-8 > /etc/locale.conf
 echo 'KEYMAP=us' > /etc/vconsole.conf
 echo 'omen' > /etc/hostname                 # nombre del equipo
 

@@ -287,7 +287,7 @@ ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 hwclock --systohc
 sed -i 's/^#\(es_CL.UTF-8\|en_US.UTF-8\)/\1/' /etc/locale.gen
 locale-gen
-echo 'LANG=es_CL.UTF-8' >/etc/locale.conf
+printf '%s\n' LANG=en_US.UTF-8 LC_TIME=es_CL.UTF-8 LC_MEASUREMENT=es_CL.UTF-8 LC_PAPER=es_CL.UTF-8 >/etc/locale.conf
 echo 'KEYMAP=us' >/etc/vconsole.conf
 echo '$host' >/etc/hostname
 id -u '$user' >/dev/null 2>&1 || useradd -m -G wheel -s /bin/zsh '$user'
