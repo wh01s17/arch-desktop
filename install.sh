@@ -426,6 +426,16 @@ stage_aur() {
   if [[ $DETECT_BOOTLOADER == limine && $DETECT_ROOT_FS == btrfs ]]; then
     packages+=(limine-mkinitcpio-hook limine-snapper-sync)
   fi
+  # Steam's vulkan-driver dependency can pull the repo nvidia-utils, which
+  # conflicts with the 580xx branch; that branch provides it, so swap it out.
+  if [[ $WH_GPU == nvidia-legacy ]] && ! pacman -Q nvidia-580xx-utils >/dev/null 2>&1; then
+    local -a repo_nvidia=()
+    mapfile -t repo_nvidia < <(pacman -Qq nvidia-utils lib32-nvidia-utils 2>/dev/null)
+    if ((${#repo_nvidia[@]})); then
+      info "Quitando ${repo_nvidia[*]} del repositorio para instalar la rama 580xx"
+      as_root pacman -Rdd --noconfirm "${repo_nvidia[@]}"
+    fi
+  fi
   log "Instalando ${#packages[@]} paquetes del AUR (de uno en uno)"
   local package
   for package in "${packages[@]}"; do
