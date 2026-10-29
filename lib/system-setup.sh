@@ -276,6 +276,11 @@ EOF
     # copies at the ESP root that nothing updates any more: about 300 MB,
     # enough to keep snapshots out of the boot menu.
     esp=$(sed -n 's/^ESP_PATH="\(.*\)"/\1/p' /etc/default/limine)
+    # iso-install.sh's first-boot entry boots those copies; drop it once the
+    # generated entries exist.
+    if [[ -n $esp ]] && grep -q 'machine-id=' "$esp/limine.conf"; then
+      sed -i '/^\/Arch Linux$/,/^    module_path: boot():\/initramfs-linux\.img$/d' "$esp/limine.conf"
+    fi
     if [[ -n $esp ]] && ! grep -q 'boot():/\(vmlinuz\|initramfs\)-' "$esp/limine.conf"; then
       rm -f "$esp"/vmlinuz-* "$esp"/initramfs-*.img
     fi
