@@ -74,7 +74,9 @@ cfdisk /dev/nvme0n1                     # nueva partición «Linux filesystem»
 mkfs.btrfs -L arch /dev/nvme0n1p4       # la nueva; NO formatees la ESP de Windows
 ```
 
-Sin Windows: crea una ESP de 1 GB (`mkfs.fat -F32`) y el resto btrfs.
+Sin Windows: crea una ESP de 4 GB (`mkfs.fat -F32`) y el resto btrfs: Limine copia
+el kernel y el initramfs de `linux` y `linux-lts` para cada snapshot del menú, y
+con NVIDIA cada initramfs puede pasar de 100 MB.
 
 ### btrfs con subvolúmenes `@`
 

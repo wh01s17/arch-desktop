@@ -88,7 +88,7 @@ if $resume; then
 else
   log 'Discos'
   lsblk -o NAME,SIZE,FSTYPE,LABEL,PARTTYPENAME
-  echo '    1) Disco entero: borra todas sus particiones (Windows incluido) y crea una ESP de 1 GB y el resto btrfs'
+  echo '    1) Disco entero: borra todas sus particiones (Windows incluido) y crea una ESP de 4 GB y el resto btrfs'
   echo '    2) Particiones: elige la de Linux y reutiliza la ESP (conserva Windows)'
   # With Windows anywhere, the default must not be the mode that wipes a disk.
   default_mode=1
@@ -203,7 +203,7 @@ if ! $resume; then
   if $whole_disk; then
     printf '    Se BORRA ENTERO: %s\n' "$(lsblk -dno NAME,SIZE,MODEL "$disk")"
     lsblk -no NAME,SIZE,FSTYPE,LABEL "$disk" | tail -n +2 | sed 's/^/      /'
-    printf '    ESP:       nueva, 1 GB\n'
+    printf '    ESP:       nueva, 4 GB\n'
   else
     printf '    Se BORRA:  %s\n' "$(lsblk -dno NAME,SIZE,FSTYPE,LABEL "$root")"
     if $format_esp; then
@@ -221,7 +221,7 @@ if ! $resume; then
     log 'Particiones'
     wipefs -a "$disk" >/dev/null
     sgdisk --zap-all "$disk" >/dev/null
-    sgdisk -n1:0:+1G -t1:ef00 -c1:EFI -n2:0:0 -t2:8300 -c2:arch "$disk" >/dev/null
+    sgdisk -n1:0:+4G -t1:ef00 -c1:EFI -n2:0:0 -t2:8300 -c2:arch "$disk" >/dev/null
     partprobe "$disk"
     udevadm settle
     mapfile -t parts < <(lsblk -lnpo NAME,TYPE "$disk" | awk '$2 == "part" {print $1}')
