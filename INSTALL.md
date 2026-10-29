@@ -210,10 +210,10 @@ seguirá mostrando un Windows que no arranca. Si no aparece, sigue `omarchy/dual
 
 ## 3. Primer arranque y escritorio
 
-Entra en la TTY con tu usuario y conéctate a la red (`nmtui`). Después:
+Entra en la TTY con tu usuario y conéctate a la red (`nmtui`). Después (si no
+usaste `tools/iso-install.sh`, clona antes el repo en `~/workspace/arch-desktop`):
 
 ```bash
-git clone https://github.com/wh01s17/arch-desktop.git ~/workspace/arch-desktop
 cd ~/workspace/arch-desktop
 ./install.sh --dry-run      # revisa el plan sin tocar nada
 ./install.sh
