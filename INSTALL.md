@@ -252,7 +252,7 @@ tools/compare-binds.sh          # atajos frente a Omarchy (sin los descartados)
 hyprctl configerrors                 # vacío
 systemctl --failed; systemctl --user --failed
 nvidia-smi                           # con GPU NVIDIA
-cat /sys/module/nvidia_drm/parameters/modeset   # Y
+sudo cat /sys/module/nvidia_drm/parameters/modeset   # Y
 snapper list                         # snapshots de pacman (snap-pac)
 sudo btrfs subvolume list /          # @, @home, @log, @pkg, @docker, @containerd, @swap y @/.snapshots
 findmnt -t btrfs -o TARGET,OPTIONS   # / con subvol=/@ y compress=zstd:1

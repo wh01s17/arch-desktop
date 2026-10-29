@@ -113,7 +113,8 @@ lspci -nnk | grep -A3 -E 'VGA|3D|Display' | grep -E 'VGA|3D|Display|driver in us
 if [[ $WH_GPU == nvidia* ]]; then
   check "nvidia-smi ve la GPU" nvidia-smi -L
   check "módulo nvidia cargado (no nouveau)" sh -c "lsmod | grep -q '^nvidia ' && ! lsmod | grep -q '^nouveau '"
-  check "nvidia_drm con modeset=Y" grep -qx Y /sys/module/nvidia_drm/parameters/modeset
+  # The parameter is root-only (0400) on the 580xx branch.
+  check "nvidia_drm con modeset=Y" sh -c "sudo -n cat /sys/module/nvidia_drm/parameters/modeset | grep -qx Y"
   check "módulo DKMS compilado para $(uname -r)" sh -c "dkms status -k '$(uname -r)' | grep -q installed"
 fi
 info "Vulkan: $(vulkaninfo --summary 2>/dev/null | grep -m1 deviceName | sed 's/.*= //' || echo '-')"
