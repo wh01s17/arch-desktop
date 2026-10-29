@@ -88,11 +88,21 @@ if [[ $(findmnt -no FSTYPE /) == btrfs ]]; then
   fi
 fi
 check "paccache.timer activo" systemctl is-enabled paccache.timer
+esp_use=$(df --output=pcent /boot 2>/dev/null | tail -1 | tr -dc 0-9)
+if [[ -n $esp_use ]]; then
+  # limine-snapper-sync stops adding snapshot entries above 85 %.
+  ((esp_use < 70)) && ok "ESP al ${esp_use} % ($(df -h --output=size /boot | tail -1 | xargs))" ||
+    bad "ESP al ${esp_use} %: no caben snapshots en el menú de Limine (sudo du -sh /boot/*/*/*)"
+fi
 info "zram: $(zramctl --noheadings -o NAME,DISKSIZE,ALGORITHM 2>/dev/null | paste -sd' ')"
 if [[ -f /swap/swapfile ]] || swapon --show=NAME --noheadings | grep -qv zram; then
   ok "swap para hibernar: $(swapon --show=NAME,SIZE --noheadings | grep -v zram | paste -sd' ')"
 else
   info "sin swap en disco (no hay hibernación)"
+fi
+
+if [[ " $WH_GROUPS " == *" virtualization "* ]]; then
+  check "virtualización por hardware (VT-x/AMD-V activa en la BIOS)" test -e /dev/kvm
 fi
 
 echo "== Servicios"
