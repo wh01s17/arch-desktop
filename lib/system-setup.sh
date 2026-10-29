@@ -271,7 +271,17 @@ EOF
   if installed limine-snapper-sync; then
     systemctl enable limine-snapper-sync.service || failed+=('systemctl enable limine-snapper-sync.service')
   fi
-  limine-mkinitcpio || failed+=('limine-mkinitcpio')
+  if limine-mkinitcpio; then
+    # Kernels installed before the hook (pacstrap, the packages stage) left
+    # copies at the ESP root that nothing updates any more: about 300 MB,
+    # enough to keep snapshots out of the boot menu.
+    esp=$(sed -n 's/^ESP_PATH="\(.*\)"/\1/p' /etc/default/limine)
+    if [[ -n $esp ]] && ! grep -q 'boot():/\(vmlinuz\|initramfs\)-' "$esp/limine.conf"; then
+      rm -f "$esp"/vmlinuz-* "$esp"/initramfs-*.img
+    fi
+  else
+    failed+=('limine-mkinitcpio')
+  fi
 else
   mkinitcpio -P || failed+=('mkinitcpio -P')
 fi
