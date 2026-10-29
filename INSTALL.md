@@ -35,9 +35,10 @@ Para el arranque dual con Windows, sigue `omarchy/dual-boot.md` (repo privado po
 
 ## 2. Sistema base desde el ISO de Arch
 
-`tools/iso-install.sh` hace todo este apartado. Sin Windows, borra el disco
-entero y crea la ESP y la partición de btrfs; con Windows, eliges la partición
-de Linux y reutiliza su ESP. Cifra la partición de Linux con LUKS2 (con TRIM)
+`tools/iso-install.sh` hace todo este apartado. En el modo 1 borra todas las
+particiones del disco elegido y crea la ESP y la partición de btrfs; si el
+disco tiene Windows o NTFS, pide escribir su nombre para confirmarlo. En el
+modo 2 eliges la partición de Linux y reutiliza la ESP de Windows. Cifra la partición de Linux con LUKS2 (con TRIM)
 salvo que respondas que no. Pregunta el equipo, el usuario y las contraseñas,
 y pide escribir `BORRAR` antes de tocar el disco. Desde el ISO, con red:
 
@@ -64,7 +65,8 @@ lsblk -f
 
 ### Particiones
 
-Si hay Windows, **reutiliza su ESP** (FAT32, ~1 GB en tu Omen) y crea sólo la
+Si hay Windows, **reutiliza su ESP** (FAT32, con al menos 1 GiB libre:
+`limine-entry-tool` copia ahí los kernels de cada snapshot) y crea sólo la
 partición de Linux en el espacio libre:
 
 ```bash
@@ -117,15 +119,24 @@ mount -o "$opts,subvol=@pkg"        /dev/nvme0n1p4 /mnt/var/cache/pacman/pkg
 mount -o "$opts,subvol=@docker"     /dev/nvme0n1p4 /mnt/var/lib/docker
 mount -o "$opts,subvol=@containerd" /dev/nvme0n1p4 /mnt/var/lib/containerd
 mount -o "$opts,subvol=@swap"       /dev/nvme0n1p4 /mnt/swap
-mount /dev/nvme0n1p1 /mnt/boot          # la ESP (Omarchy la monta en /boot)
+mount -o fmask=0077,dmask=0077 /dev/nvme0n1p1 /mnt/boot   # la ESP, sólo para root
 ```
 
 `compress=zstd:1` sólo comprime lo que se escribe a partir de ahora; el
 swapfile y los archivos con `chattr +C` no se comprimen.
 
-Tu fstab actual también monta Windows en `/mnt/windows` (`ntfs3`, con
-`x-systemd.automount` y `nofail`). Si lo quieres igual, añade esa línea a
-`/etc/fstab` tras el primer arranque.
+El disco de datos NTFS (el HDD, `Datos`) se monta en `/data` tras el primer
+arranque; `nofail` deja arrancar aunque falte:
+
+```bash
+sudo mkdir -p /data
+echo "UUID=$(sudo blkid -s UUID -o value /dev/sda2)  /data  ntfs3  uid=1000,gid=1000,umask=022,windows_names,nofail,x-systemd.automount  0 0" |
+  sudo tee -a /etc/fstab
+sudo systemctl daemon-reload && ls /data
+```
+
+Un disco dinámico de Windows (LDM) no se monta así: léelo con `ldmtool create
+all` (paquete `libldm`) y conviértelo a básico antes de reinstalar.
 
 ### Paquetes mínimos e idioma
 
@@ -164,10 +175,11 @@ El instalador añadirá después `limine-mkinitcpio-hook` y
 Windows). Ahora basta con que el sistema arranque:
 
 ```bash
-mkdir -p /boot/EFI/limine
-cp /usr/share/limine/BOOTX64.EFI /boot/EFI/limine/
+# El mismo archivo y la misma etiqueta que limine-install: su hook de pacman
+# actualiza este binario y no crea una segunda entrada.
+install -D -m 0644 /usr/share/limine/BOOTX64.EFI /boot/EFI/limine/limine_x64.efi
 efibootmgr --create --disk /dev/nvme0n1 --part 1 \
-  --label "Arch Linux" --loader '\EFI\limine\BOOTX64.EFI' --unicode
+  --label "Limine" --loader '\EFI\limine\limine_x64.efi' --unicode
 
 root_uuid=$(blkid -s PARTUUID -o value /dev/nvme0n1p4)
 cat > /etc/default/limine <<EOF
@@ -189,7 +201,10 @@ umount -R /mnt && reboot
 ```
 
 Con `FIND_BOOTLOADERS=yes` (lo configura el instalador), Limine añade
-Windows solo. Si no aparece, sigue `omarchy/dual-boot.md` (repo privado post-install-linux) §6.
+Windows solo. Busca en todas las ESP, también las de otros discos: si quitaste
+Windows, borra su ESP sobrante (y su partición «Microsoft reserved») con
+`sgdisk -d N /dev/sdX` y su entrada con `efibootmgr -b NNNN -B`, o Limine
+seguirá mostrando un Windows que no arranca. Si no aparece, sigue `omarchy/dual-boot.md` (repo privado post-install-linux) §6.
 
 ## 3. Primer arranque y escritorio
 
