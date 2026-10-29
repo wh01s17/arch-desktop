@@ -332,7 +332,8 @@ if $encrypt; then
 else
   cmdline="root=PARTUUID=$(blkid -s PARTUUID -o value "$part")"
 fi
-cmdline+=" rootflags=subvol=@ zswap.enabled=0 rw rootfstype=btrfs"
+# quiet: firmware bugs (ACPI on HP laptops) would flood the LUKS prompt.
+cmdline+=" rootflags=subvol=@ zswap.enabled=0 rw rootfstype=btrfs quiet loglevel=3"
 cat >/mnt/etc/default/limine <<EOF
 ESP_PATH="/boot"
 KERNEL_CMDLINE[default]+="$cmdline"
