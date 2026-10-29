@@ -219,6 +219,14 @@ if installed pacman-contrib; then
   systemctl enable paccache.timer || failed+=('systemctl enable paccache.timer')
 fi
 
+# hardware/nvidia.sh loads NVIDIA from the initramfs, which brings along every
+# GSP firmware nvidia.ko declares (about 200 MB). Pascal has no GSP, so the
+# 580xx branch loads from the root file system instead; udev still applies
+# modeset=1 from modprobe.d.
+if [[ $WH_GPU == nvidia-legacy ]]; then
+  rm -f /etc/mkinitcpio.conf.d/nvidia.conf
+fi
+
 step 'initramfs y arranque'
 # These hooks unlock LUKS with `encrypt` (cryptdevice=), like archinstall with a
 # password. A FIDO2/HSM install boots with rd.luks= and sd-encrypt instead;
