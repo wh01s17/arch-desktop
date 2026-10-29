@@ -4,6 +4,7 @@
 set -uo pipefail
 
 exec > >(tee "$HOME/check-system.txt") 2>&1
+repo="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 echo "Pide tu contraseña una vez para leer snapper y el firewall (Ctrl+C para omitir)."
 sudo -v 2>/dev/null || true
@@ -22,6 +23,25 @@ info "$(cat /sys/class/dmi/id/sys_vendor /sys/class/dmi/id/product_name 2>/dev/n
 info "kernel $(uname -r) · $(nproc) CPU · $(free -h | awk '/Mem/{print $2}') RAM"
 info "perfil: $(grep -o '"[^"]*"' ~/.config/hypr/machine-profile.lua 2>/dev/null | tr -d '"')"
 grep -E '^WH_' ~/.config/wh01s17/machine.env 2>/dev/null | sed 's/^/        /'
+
+echo "== Instalación"
+WH_GROUPS='' WH_GPU=''
+# shellcheck disable=SC1090
+[[ -f ~/.config/wh01s17/machine.env ]] && source ~/.config/wh01s17/machine.env
+[[ $(getent passwd "$USER" | cut -d: -f7) == */zsh ]] && ok "shell de $USER: zsh" ||
+  bad "la shell de $USER no es zsh: chsh -s /usr/bin/zsh"
+lists=("$repo"/packages/{base,desktop,fonts,terminal}.txt "$repo/packages/core.aur.txt")
+for group in $WH_GROUPS; do
+  [[ $group == pentest ]] && continue # BlackArch drops packages; install.sh already reports them
+  lists+=("$repo/packages/$group.txt" "$repo/packages/$group.aur.txt")
+done
+lists+=("$repo/packages/gpu-$WH_GPU.txt" "$repo/packages/gpu-$WH_GPU.aur.txt")
+mapfile -t wanted < <(cat "${lists[@]}" 2>/dev/null | sed -e 's/#.*//' -e 's/[[:space:]]*$//' | grep -v '^$' | sort -u)
+# pacman -T counts providers too: nvidia-580xx-utils satisfies nvidia-utils.
+missing=$(pacman -T "${wanted[@]}" 2>/dev/null | paste -sd' ')
+[[ -z $missing ]] && ok "los ${#wanted[@]} paquetes de las listas están instalados" ||
+  bad "faltan paquetes (./install.sh --only packages o --only aur): $missing"
+check "repositorio multilib activo" grep -qE '^\[multilib\]' /etc/pacman.conf
 
 echo "== Arranque y disco"
 root_src=$(findmnt -no SOURCE / | sed 's/\[.*//')
@@ -90,6 +110,12 @@ check "firewall activo" sh -c "sudo -n ufw status 2>/dev/null | grep -q 'Status:
 
 echo "== Gráficos y sonido"
 lspci -nnk | grep -A3 -E 'VGA|3D|Display' | grep -E 'VGA|3D|Display|driver in use' | sed 's/^\s*/        /'
+if [[ $WH_GPU == nvidia* ]]; then
+  check "nvidia-smi ve la GPU" nvidia-smi -L
+  check "módulo nvidia cargado (no nouveau)" sh -c "lsmod | grep -q '^nvidia ' && ! lsmod | grep -q '^nouveau '"
+  check "nvidia_drm con modeset=Y" grep -qx Y /sys/module/nvidia_drm/parameters/modeset
+  check "módulo DKMS compilado para $(uname -r)" sh -c "dkms status -k '$(uname -r)' | grep -q installed"
+fi
 info "Vulkan: $(vulkaninfo --summary 2>/dev/null | grep -m1 deviceName | sed 's/.*= //' || echo '-')"
 check "PipeWire activo" systemctl --user is-active pipewire wireplumber
 info "salida de audio: $(wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null | grep -m1 'node.description' | sed 's/.*= //')"

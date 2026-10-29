@@ -247,6 +247,7 @@ en SDDM, pulsa Enter con el campo vacío y apoya el dedo.
 ## 4. Comprobaciones
 
 ```bash
+tools/check-system.sh           # todo de una vez, dentro de la sesión; copia en ~/check-system.txt
 tools/compare-binds.sh          # atajos frente a Omarchy (sin los descartados)
 hyprctl configerrors                 # vacío
 systemctl --failed; systemctl --user --failed
