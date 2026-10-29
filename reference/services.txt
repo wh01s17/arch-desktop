@@ -28,6 +28,7 @@ systemd-resolved-varlink.socket
 systemd-userdbd.socket
 remote-fs.target
 btrfs-balance-auto.timer
+paccache.timer
 snapper-cleanup.timer
 
 ## Usuario
@@ -45,10 +46,12 @@ p11-kit-server.socket
 pipewire-pulse.socket
 pipewire.socket
 btrfs-space-check.timer
+cache-prune.timer
 codex-staging-clean.timer
 mise-prune.timer
 
 ## Timers activos del usuario
 btrfs-space-check.timer
+cache-prune.timer
 codex-staging-clean.timer
 mise-prune.timer

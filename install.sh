@@ -740,7 +740,7 @@ stage_shell() {
 stage_services() {
   log 'Servicios de usuario'
   local unit
-  for unit in btrfs-space-check.timer codex-staging-clean.timer mise-prune.timer; do
+  for unit in btrfs-space-check.timer cache-prune.timer codex-staging-clean.timer mise-prune.timer; do
     [[ -f $HOME/.config/systemd/user/$unit ]] || continue
     run systemctl --user enable "$unit" || note "No se pudo habilitar $unit."
   done
