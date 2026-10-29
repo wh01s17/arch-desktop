@@ -88,14 +88,14 @@ if $resume; then
 else
   log 'Discos'
   lsblk -o NAME,SIZE,FSTYPE,LABEL,PARTTYPENAME
-  echo '    1) Disco entero: lo borra y crea una ESP de 1 GB y el resto btrfs (sin Windows)'
-  echo '    2) Particiones: elige la de Linux y reutiliza la ESP (con Windows)'
+  echo '    1) Disco entero: borra todas sus particiones (Windows incluido) y crea una ESP de 1 GB y el resto btrfs'
+  echo '    2) Particiones: elige la de Linux y reutiliza la ESP (conserva Windows)'
   # With Windows anywhere, the default must not be the mode that wipes a disk.
   default_mode=1
   for dev in $(lsblk -lnpo NAME); do
     if is_windows "$dev"; then
       default_mode=2
-      echo '    Hay Windows en este equipo: el modo 2 lo conserva.'
+      echo '    Hay Windows o NTFS en este equipo: el modo 2 lo conserva; el 1 pide confirmarlo.'
       break
     fi
   done
@@ -108,9 +108,18 @@ else
       disk=$(device "$disk")
       [[ -b $disk && $(lsblk -dno TYPE "$disk") == disk ]] || die "$disk no es un disco."
       ! lsblk -no MOUNTPOINTS "$disk" | grep -q . || die "$disk tiene particiones montadas."
+      # Erasing Windows, or a data disk with NTFS, takes typing the disk's name.
+      windows_parts=()
       for p in $(lsblk -lnpo NAME "$disk" | tail -n +2); do
-        ! is_windows "$p" || die "$disk tiene Windows ($p). Usa el modo 2 para conservarlo; si de verdad quieres borrarlo, elimina antes sus particiones con cfdisk."
+        if is_windows "$p"; then windows_parts+=("$p"); fi
       done
+      if ((${#windows_parts[@]})); then
+        echo "    $disk tiene particiones de Windows o NTFS; se pierden todas:"
+        lsblk -no NAME,SIZE,FSTYPE,LABEL,PARTTYPENAME "${windows_parts[@]}" | sed 's/^/      /'
+        echo '    Para conservarlas, usa el modo 2.'
+        prompt again "Escribe $(basename "$disk") para borrarlas"
+        [[ $again == "$(basename "$disk")" ]] || die 'Cancelado; no se cambió nada.'
+      fi
       format_esp=true
       ;;
     2)
@@ -140,8 +149,10 @@ else
         *) die "$esp no es FAT32." ;;
       esac
       if ! $format_esp; then
-        # linux and linux-lts with their initramfs need roughly 250 MiB; files
-        # with the same names from an earlier Arch are replaced, so they count.
+        # limine-entry-tool asks for 1 GiB free: it copies every kernel and
+        # initramfs per machine and per snapshot, besides the ones pacman puts
+        # in /boot. Files with the same names from an earlier Arch are
+        # replaced, so they count as free.
         espdir=$(mktemp -d)
         mount -o ro "$esp" "$espdir"
         old_kernels=$(find "$espdir" -maxdepth 1 \( -name 'vmlinuz-*' -o -name 'initramfs-*' \) \
@@ -149,8 +160,8 @@ else
         free_mib=$(($(df --output=avail -B1M "$espdir" | tail -1) + old_kernels))
         umount "$espdir"
         rmdir "$espdir"
-        if ((free_mib < 300)); then
-          echo "    La ESP sólo tiene ${free_mib} MiB libres para los kernels (se necesitan unos 300)."
+        if ((free_mib < 1024)); then
+          echo "    La ESP sólo tiene ${free_mib} MiB libres para los kernels y los snapshots (se necesita 1 GiB)."
           prompt again '¿Seguir igual? Si se llena, la instalación falla, pero Windows no se toca (s/n)' n
           is_yes "$again" || die 'Cancelado; no se cambió nada.'
         fi
@@ -295,20 +306,22 @@ EOF
 fi
 
 log 'Limine'
-mkdir -p /mnt/boot/EFI/limine
-cp /mnt/usr/share/limine/BOOTX64.EFI /mnt/boot/EFI/limine/
+# The same file and label limine-install uses: its pacman hook then updates
+# this binary and finds the entry instead of adding a second one.
+install -D -m 0644 /mnt/usr/share/limine/BOOTX64.EFI /mnt/boot/EFI/limine/limine_x64.efi
 # Some firmware (HP among them) ignores new boot entries and only starts the
 # fallback path. Leave it alone if something, such as Windows, already uses it.
 if [[ ! -e /mnt/boot/EFI/BOOT/BOOTX64.EFI ]]; then
   install -D -m 0644 /mnt/usr/share/limine/BOOTX64.EFI /mnt/boot/EFI/BOOT/BOOTX64.EFI
 fi
-# Entries from an earlier install or run point at partitions that may be gone.
-efibootmgr | sed -n 's/^Boot\([0-9A-Fa-f]\{4\}\)[* ] Arch Linux\(\t.*\)\{0,1\}$/\1/p' |
+# Entries from an earlier install or run (Omarchy's included) point at
+# partitions or binaries that may be gone.
+efibootmgr | sed -n 's/^Boot\([0-9A-Fa-f]\{4\}\)[* ] \(Arch Linux\|Limine\)\(\t.*\)\{0,1\}$/\1/p' |
   while read -r num; do efibootmgr -q -b "$num" -B; done
 esp_name=$(basename "$(readlink -f "$esp")")
 efibootmgr --create --disk "/dev/$(lsblk -dno PKNAME "$esp")" \
   --part "$(</sys/class/block/"$esp_name"/partition)" \
-  --label 'Arch Linux' --loader '\EFI\limine\BOOTX64.EFI' --unicode >/dev/null
+  --label 'Limine' --loader '\EFI\limine\limine_x64.efi' --unicode >/dev/null
 if $encrypt; then
   cmdline="cryptdevice=UUID=$(blkid -s UUID -o value "$part"):root root=/dev/mapper/root"
 else
